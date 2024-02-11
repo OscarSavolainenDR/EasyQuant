@@ -14,7 +14,7 @@ This library has cool soome features, such as:
 - Never-seen-before quantization-specific visualization and analysis tools: see how your tensor interacts with its quantization grid, and see what parts of your quantization range matter the most with our Jacobian Sensitivity Analysis plots.
 - Super-fast, memory-safe custom backend kernels written in Rust, instead of Torch's native C++. One can also select to use Torch's native C++ backend kernels, where they are available.
 - All of the standard quantization boilerplate is simplified and modularised, e.g. assigning of qconfigs, fusing, PTQ, QAT, you name it.
-- An axtensive array of unit tests to catch your deadly silent errors, and make them loud :fireworks:.
+- An extensive array of unit tests to catch your deadly silent errors, and make them loud :fireworks:.
 
 It all works out the box, and it's all quick and easy to use!
 
