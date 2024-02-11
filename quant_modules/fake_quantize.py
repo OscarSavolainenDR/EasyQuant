@@ -276,15 +276,20 @@ class FakeQuantize(FakeQuantizeBase):
         """
         Returns the PTQ forward call, and it returns either quantized or dequantized tensors.
         """
-        PTQ_forward = self.PTQ_forward
-        quant_or_dequant_forward = self._get_quant_or_dequant_forward()
-
-        # TODO: figure out how to give more verbose logging of this function name
-        def PTQ_then_quant_or_dequant(X):
-            X = PTQ_forward(X)
-            X = quant_or_dequant_forward(X)
-            return X
-        return PTQ_then_quant_or_dequant
+        if self.fake_quant_enabled:
+            base_forward = self._get_fake_quant_forward()
+            def PTQ_then_fake_quant_return(X):
+                X = self.PTQ_forward(X)
+                X = base_forward(X)
+                return X
+            return PTQ_then_fake_quant_return
+        else:
+            base_forward = self._get_float_forward()
+            def PTQ_then_dequantized_return(X):
+                X = self.PTQ_forward(X)
+                X = base_forward(X)
+                return X
+            return PTQ_then_dequantized_return
 
     ###################
     # FORWARD METHODS #
