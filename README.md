@@ -3,7 +3,9 @@
 BetterQuant is an extension to PyTorch's native neural network quantization library. 
 
 ## Why BetterQuant?
-Neural network quantization is difficult. The frameworks aren't easy to navigate, things will fail silently, and good luck creating anything custom. I became an expert at dealing with its intricacies and pain points, but nobody should have to go through that. Quantization should all Just Work :tm:, and it should be quick and easy! And so was born BetterQuant! It is ridiculously easy to get started with, just pip install, import, and it'll immediately all interface seamlessly with your PyTorch code.
+Neural network quantization is difficult. The frameworks aren't easy to navigate, things will fail silently, and good luck creating anything custom. I became an expert at dealing with its intricacies and pain points, but nobody should have to go through that. Quantization should all Just Work :tm:, and it should be quick and easy! If you're a developer, it should all scale well, and just make sense. And so was born BetterQuant! 
+
+It is super easy to get started with, just pip install, import, and it'll immediately all interface seamlessly with your PyTorch code.
 
 ## Features
 This library has cool soome features, such as:
