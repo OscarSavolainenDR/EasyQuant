@@ -102,7 +102,7 @@ class FakeQuantizeBase(ABC, Module):
 
     @torch.jit.export
     def enable_fake_quant(self, enabled: bool = True) -> None:
-        self.fake_quant_enabled[0] = 1 if enabled else 0
+        self.fake_quant_enabled = torch.Tensor([1]) if enabled else torch.Tensor([0])
 
     @torch.jit.export
     def disable_fake_quant(self):
@@ -110,7 +110,7 @@ class FakeQuantizeBase(ABC, Module):
 
     @torch.jit.export
     def enable_PTQ_observer(self, enabled: bool = True) -> None:
-        self.PTQ_observer_enabled[0] = 1 if enabled else 0
+        self.PTQ_observer_enabled = torch.Tensor([1]) if enabled else torch.Tensor([0])
 
     @torch.jit.export
     def disable_PTQ_observer(self):
@@ -203,7 +203,8 @@ class FakeQuantize(FakeQuantizeBase):
             'Only per channel and per tensor quantization are supported in fake quantize' + \
             ' got qscheme: ' + str(self.qscheme)
         self.is_per_channel = _is_per_channel(self.qscheme)
-        self.forward = self._get_fake_quant_forward()
+        self.set_forward_call()
+
 
     @torch.jit.export
     def calculate_qparams(self):
@@ -215,31 +216,31 @@ class FakeQuantize(FakeQuantizeBase):
         buffer values have been updated, before continuing as usual.
         """
 
-        # If any of the buffers has been affected, we assume it is a change to the quantization
-        # forward call state. We call the `set_forward_call` method.
-        if torch.is_buffer(value):
-            # NOTE: make sure this doesn't get called every time qparams get changed, that would suck.
-            self.set_forward_call()
-
         # Call the original __setattr__ method
         super(self.__class__, self).__setattr__(name, value)
+
+        # If any of the buffers has been affected, we assume it is a change to the quantization
+        # forward call state. We call the `set_forward_call` method.
+        if name in self._buffers:
+            # NOTE: make sure this doesn't get called every time qparams get changed, that would suck.
+            self.set_forward_call()
 
     #########################
     # FORWARD METHOD SETTER #
     #########################
     def set_forward_call(self):
         """
-        Updates the forward call based on the int-state toggles.
+        Updates the forward call, based on the values in the int-state toggles/buffers.
         """
         # NOTE: maybe have fake-quant toggle play a role here too, and do away with
-        # get_base_forward.
+        # `_get_quant_or_dequant_forward`.
         if self.PTQ_observer_enabled:
             # PTQ is enabled, and one either returns a quantized or dequantized forward call
             # depending on `self.fake_quant_enabled`.
             self.forward = self._get_PTQ_forward()
         else:
             # No PTQ, only the quantized or dequantized forward call.
-            self.forward = self._get_base_forward()
+            self.forward = self._get_quant_or_dequant_forward()
 
     ##########################
     # FORWARD METHOD GETTERS #
@@ -254,14 +255,14 @@ class FakeQuantize(FakeQuantizeBase):
         """
         Returns the fake-quantize forward call, depending om the qscheme.
         """
-        if _is_per_channel(self):
+        if _is_per_channel(self.qscheme):
             return self.fake_quant_per_channel_forward
-        elif _is_per_tensor(self):
+        elif _is_per_tensor(self.qscheme):
             return self.fake_quant_per_tensor_forward
         else:
             raise NotImplementedError("FakeQuantize only supports per-channel or per-tensor quantization")
 
-    def _get_base_forward(self):
+    def _get_quant_or_dequant_forward(self):
         """
         Returns either the floating-point or fake-quantized forward call,
         depending on whether fake-quantization is enabled or not.
@@ -275,10 +276,15 @@ class FakeQuantize(FakeQuantizeBase):
         """
         Returns the PTQ forward call, and it returns either quantized or dequantized tensors.
         """
-        base_forward = self._get_base_forward()
-        XXX
-        # check this works, maybe lambdas
-        return self.PTQ_forward(base_forward)
+        PTQ_forward = self.PTQ_forward
+        quant_or_dequant_forward = self._get_quant_or_dequant_forward()
+
+        # TODO: figure out how to give more verbose logging of this function name
+        def PTQ_then_quant_or_dequant(X):
+            X = PTQ_forward(X)
+            X = quant_or_dequant_forward(X)
+            return X
+        return PTQ_then_quant_or_dequant
 
     ###################
     # FORWARD METHODS #
@@ -328,6 +334,10 @@ class FakeQuantize(FakeQuantizeBase):
         self.scale.copy_(_scale)
         self.zero_point.copy_(_zero_point)
         return X
+
+    # Dummy forward call to allow intiailization
+    def forward(self, X):
+        pass
 
 
     @torch.jit.export
