@@ -1,14 +1,19 @@
 """
 File for the fake-quant modules. This is a DIRECT analog to PyTorch's
-`torch.ao.quantization.fake_quantize.py`.
+`torch.ao.quantization.fake_quantize.py` `FakeQuantize` class.
 
-The main difference is that we break up the forward calls into minimal blocks, and use
-setter methods to swap out the forward calls of the quantization modules to the
-minimal needed. This significantly increases the speed of forward and backwards
-passes, admittedly at the cost of some added coding complexity.
+There are two main differences to PyTorch's `FakeQuantize` classL
+Firstly, the forward call is split into modular parts:
+    - an observation forward call, and
+    - a transform forward call.
+This allows one to experiment with different observer algorithms and
+quantization transforms.
 
-However, this makes understanding the state of the quantization modules easier,
-as there is no ambiguity about what is happening inside any specific forward call.
+Secondly, this also speeds up the execution significantly, because the branching
+if-statement logic is front-loaded to when one chooses which behavior
+one wants for the quantization module, and doesn't require that one answer
+branching if-statements on the fly in every forward call.
+
 """
 
 import torch
@@ -59,7 +64,7 @@ def _is_float_qparams(qscheme: 'torch.qscheme') -> bool:
 class BQFakeQuantize(TorchFakeQuantize):
     r"""This is a wrapper around Torch's `FakeQuantize` class. It modularizes the forward calls,
     speeding up their execution and allowing for the scalable introduction of different `observer`
-    and `return` algorithms.
+    and `transform` algorithms.
 
     `observer_enabled` is renamed to the more descriptive `PTQ_observer_enabled`, also
     enabling the introduction of observers that are not PTQ.
@@ -77,7 +82,7 @@ class BQFakeQuantize(TorchFakeQuantize):
         delattr(self, 'observer_enabled')
         self.register_buffer('PTQ_observer_enabled', torch.tensor([0], dtype=torch.uint8))
         self.observer = self._get_PTQ_forward()
-        self.returner = self._get_fake_quant_forward()
+        self.transform = self._get_fake_quant_forward()
 
 
     @torch.jit.export
@@ -89,13 +94,13 @@ class BQFakeQuantize(TorchFakeQuantize):
         The forward call of the quantization modules is a composition:
         one does observation, and then one returns a tensor of some sort.
 
-        Depending on what the `observer` and `returner` forward calls are equal to,
+        Depending on what the `observer` and `transform` forward calls are equal to,
         one can perform any of the combinations of operations that one may want, e.g.:
         - PTQ and return a floating point tensor;
         - no observation at all and return a fake-quantized tensor;
         """
         X = self.observer(X)
-        X = self.returner(X)
+        X = self.transform(X)
         return X
 
     ##########################
@@ -103,11 +108,11 @@ class BQFakeQuantize(TorchFakeQuantize):
     ##########################
     def enable_fake_quant(self) -> None:
         self.fake_quant_enabled[0] = 1
-        self.returner = self._get_fake_quant_forward()
+        self.transform = self._get_fake_quant_forward()
 
     def disable_fake_quant(self) -> None:
         self.fake_quant_enabled[0] = 0
-        self.returner = self._get_dummy_forward()
+        self.transform = self._get_dummy_forward()
 
     def enable_PTQ_observer(self) -> None:
         self.PTQ_observer_enabled[0] = 1
@@ -151,13 +156,13 @@ class BQFakeQuantize(TorchFakeQuantize):
         """
         Returns the input tensor. This can be interpreted as short-circuiting
         the observer in the case of the `observer` forward call, and returning
-        a dequantized tensor in the case of the `returned` forward call.
+        a dequantized tensor in the case of the `transform` forward call.
         """
         return X
 
-    ##########################
-    # RETURNED FORWARD CALLS #
-    ##########################
+    ###########################
+    # TRANSFORM FORWARD CALLS #
+    ###########################
     def fake_quant_per_channel_forward(self, X):
         """
         This is the forward call that returns a fake-quantized tensor. It
@@ -206,10 +211,10 @@ class BQFakeQuantize(TorchFakeQuantize):
     ############
     @torch.jit.export
     def extra_repr(self):
-        return 'observer_call={}, return_call={}, fake_quant_enabled={}, PTQ_observer_enabled={}, ' \
+        return 'observer_call={}, transform_call={}, fake_quant_enabled={}, PTQ_observer_enabled={}, ' \
                'quant_min={}, quant_max={}, dtype={}, qscheme={}, ch_axis={}, ' \
                'scale={}, zero_point={}'.format(
-                   self.observer.__name__, self.returner.__name__, self.fake_quant_enabled, self.PTQ_observer_enabled,
+                   self.observer.__name__, self.transform.__name__, self.fake_quant_enabled, self.PTQ_observer_enabled,
                    self.activation_post_process.quant_min, self.activation_post_process.quant_max,
                    self.dtype, self.qscheme, self.ch_axis, self.scale, self.zero_point)
 
@@ -240,9 +245,9 @@ class BQFixedQParamsFakeQuantize(BQFakeQuantize):
     @torch.jit.export
     def extra_repr(self):
         """Define a string representation of the object's attributes."""
-        return 'observer_call={}, return_call={}, fake_quant_enabled={}, PTQ_observer_enabled={}, scale={}, zero_point={}, ' \
+        return 'observer_call={}, transform_call={}, fake_quant_enabled={}, PTQ_observer_enabled={}, scale={}, zero_point={}, ' \
                'dtype={}, quant_min={}, quant_max={}, qscheme={}'.format(
-                   self.observer.__name__, self.returner.__name, self.fake_quant_enabled, self.PTQ_observer_enabled,
+                   self.observer.__name__, self.transform.__name, self.fake_quant_enabled, self.PTQ_observer_enabled,
                    self.scale, self.zero_point, self.dtype,
                    self.activation_post_process.quant_min, self.activation_post_process.quant_max, self.qscheme)
 
