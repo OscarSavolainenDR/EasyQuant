@@ -110,12 +110,6 @@ class BQLearnableFakeQuantize(TorchLearnableFakeQuantize):
         X = self.transform(X, grad_factor)
         return X
 
-    def grad_scaling(self, X):
-        raise NotImplementedError("This method should be overwritten at initialization")
-
-    def symmetric_or_affine(self):
-        raise NotImplementedError("This method should be overwritten at initialization")
-
     ##########################
     # FORWARD METHOD SETTERS #
     ##########################
