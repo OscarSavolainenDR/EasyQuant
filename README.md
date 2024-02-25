@@ -8,8 +8,8 @@ Neural network quantization is difficult. The frameworks aren't easy to navigate
 It is super easy to get started with, just pip install, import, and it'll immediately all interface seamlessly with your PyTorch code.
 
 ## Features
-This library has cool soome features, such as:
-- Automated Graph FX Mode quantization, out of the box, simply.
+This library has cool some features, such as:
+- Fuñl comparability with Eager, FX Graph, and Export Mode quantization.
 - Enable quantization-aware fusing of any layer, and any activation. You want a `ConvPReLU`? You got a `ConvPReLU`!
 - Significantly improve the speed of the Quantization Aware Training (QAT) and Post-Training Quantization (PTQ) forward calls. Save GPU time, save money!
 - A huge suite of PTQ observers, e.g. fixed weight observers, clamp-to-some-percentile observers, KL-divergence minimizing observers, etc.
