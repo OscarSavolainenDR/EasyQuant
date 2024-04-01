@@ -1,6 +1,6 @@
 import torch
 
-from ...utils.global_vars import ActHistogram
+from ...utils.act_histogram import ActHistogram
 from .forward_hooks import add_activation_forward_hooks
 from utils.dotdict import dotdict
 

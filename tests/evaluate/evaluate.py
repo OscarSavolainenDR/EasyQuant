@@ -1,4 +1,5 @@
 import torch
+from pathlib import Path
 
 def evaluate(model, device_str="cuda"):
 
@@ -50,7 +51,7 @@ def evaluate(model, device_str="cuda"):
     # print(probabilities)
 
     # Read the categories
-    with open("imagenet_classes.txt", "r") as f:
+    with open(Path(__file__).resolve().parent / "imagenet_classes.txt", "r") as f:
         categories = [s.strip() for s in f.readlines()]
     # Show top categories per image
     top5_prob, top5_catid = torch.topk(probabilities, 5)

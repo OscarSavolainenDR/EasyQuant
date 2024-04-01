@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import copy
 from pathlib import Path
 
-from ...utils.global_vars import ActHistogram
+from ...utils.act_histogram import ActHistogram
 from ...settings import HIST_QUANT_BIN_RATIO, SMOOTH_WINDOW
 from .utils import (
     get_prob_mass_outside_quant_range,
@@ -108,9 +108,21 @@ def _plot_single_tensor_histogram(
     ax.plot(
         trimmed_bin_edges,
         forward_hist_pdf,
-        ".",
+        "b.",
         markersize=markersize,
-        label="Probability",
+        label=params["act_or_weight"],
+    )
+
+    # Add smoothed out plot for the histogram (`SMOOTH_WINDOW` quantization bins)
+    smoothed_hist = moving_average(forward_hist_pdf, window_size=HIST_QUANT_BIN_RATIO*SMOOTH_WINDOW)
+
+    # Smoothed forward histogram
+    ax.plot(
+        trimmed_bin_edges,
+        smoothed_hist,
+        "b-",
+        markersize=markersize,
+        label=f"Smoothed {params["act_or_weight"]}.",
     )
 
     # Plot labels
@@ -146,9 +158,9 @@ def _plot_single_tensor_histogram(
         clamped_forward_prob_mass,
         ax_sub,
         color="b",
-        data_name="Forward Activation",
+        data_name=params["act_or_weight"],
     )
-
+    
     # Save fig with high resolution
     # NOTE: dpi = dots per inch, where a smaller value means faster plot generation but less resolution
     fig.savefig(filename, dpi=450)
@@ -160,7 +172,7 @@ def plot_quant_act_hist(
     file_path: Path,
     plot_title: Union[str, None] = None,
     module_name_mapping: Union[Callable, None] = None,
-    sum_pos_1: List[float] = [0.18, 0.75, 0.1, 0.1],
+    sum_pos_1: List[float] = [0.18, 0.60, 0.1, 0.1], 
     bit_res: int = 8,
 ):
     """
@@ -231,7 +243,7 @@ def plot_quant_weight_hist(
     plot_title: Union[str, None] = None,
     module_name_mapping: Union[Callable, None] = None,
     conditions_met: Union[Callable, None] = None,
-    sum_pos_1: List[float] = [0.18, 0.75, 0.1, 0.1],
+    sum_pos_1: List[float] = [0.18, 0.60, 0.1, 0.1], 
     bit_res: int = 8,
 ):
     """
@@ -482,7 +494,7 @@ def _plot_SA_tensor_histogram(
         forward_hist_pdf,
         "b.",
         markersize=markersize,
-        label="Forward Act Probability",
+        label=f"Forward Act Probability",
     )
     # Gradients
     ax.plot(
@@ -493,8 +505,7 @@ def _plot_SA_tensor_histogram(
         label="Grad Probability",
     )
 
-
-    # Add smoothed out plot for the gradients (`SMOOTH_WINDOW` quantization bins)
+    # Add smoothed out plot for the histogram and gradients (`SMOOTH_WINDOW` quantization bins)
     smoothed_hist = moving_average(forward_hist_pdf, window_size=HIST_QUANT_BIN_RATIO*SMOOTH_WINDOW)
     smoothed_grad = moving_average(grad_hist_pdf, window_size=HIST_QUANT_BIN_RATIO*SMOOTH_WINDOW)
 
@@ -504,7 +515,7 @@ def _plot_SA_tensor_histogram(
         smoothed_hist,
         "b-",
         markersize=markersize,
-        label="Smoothed Forward Prob.",
+        label=f"Smoothed Act Prob.",
     )
     # Smoothed Gradients
     ax.plot(

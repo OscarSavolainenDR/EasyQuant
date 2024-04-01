@@ -1,6 +1,6 @@
 import torch
 import torch.quantization._numeric_suite as ns
-from ...utils.global_vars import ActHistogram
+from ...utils.act_histogram import ActHistogram
 from ...utils.hooks import is_model_quantizable
 from utils.dotdict import dotdict
 

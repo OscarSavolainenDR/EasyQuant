@@ -322,10 +322,15 @@ input = example_inputs[0]
 out = fx_model(input)  # Test we can feed something through the model
 
 
-def conditions_met_forward_act_hook(module):
-    ipdb.set_trace()
-    return True
+def conditions_met_forward_act_hook(module: torch.nn.Module, name: str) -> bool:
+    if '1' in name:
+        return True
+    return False
 
+def weight_conditions_met(module: torch.nn.Module, name: str) -> bool:
+    if 'conv' not in name:
+        return False
+    return True
 
 # act_forward_histograms = add_activation_forward_hooks(
 # fx_model, conditions_met_forward_act_hook
@@ -338,18 +343,19 @@ fx_model.apply(disable_PTQ_observer)
 
 sum_pos_1 = [0.18, 0.60, 0.1, 0.1]
 sum_pos_2 = [0.75, 0.43, 0.1, 0.1]
-# plot_quant_weight_hist(
-# fx_model,
-# plot_title="TEST",
-# file_path=Path("Histogram_plots"),
-# module_name_mapping=None,
-# sum_pos_1=sum_pos_1,
-# bit_res=8,
-# )
+plot_quant_weight_hist(
+    fx_model,
+    plot_title="TEST",
+    file_path = Path(__file__).resolve().parent / "Histogram_plots",
+    module_name_mapping=None,
+    sum_pos_1=sum_pos_1,
+    conditions_met=weight_conditions_met,
+    bit_res=8,
+)
 # plot_quant_act_hist(
 # act_forward_histograms,
 # plot_title="TEST",
-# file_path=Path("Histogram_plots"),
+# file_path = Path(__file__).resolve().parent / "Histogram_plots",
 # module_name_mapping=None,
 # sum_pos_1=sum_pos_1,
 # bit_res=8,
@@ -402,7 +408,7 @@ for _ in range(2):
 plot_quant_act_SA_hist(
     act_forward_histograms,
     act_backward_histograms,
-    file_path=Path("Histogram_plots"),
+    file_path = Path(__file__).resolve().parent / "Histogram_plots",
     sum_pos_1=sum_pos_1,
     sum_pos_2=sum_pos_2,
     plot_title="TEST-SA",
