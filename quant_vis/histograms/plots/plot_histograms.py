@@ -478,7 +478,7 @@ def _plot_SA_tensor_histogram(
     )
 
 
-    # Add smoothed out plot for the gradients (3 quantization bins)
+    # Add smoothed out plot for the gradients (`SMOOTH_WINDOW` quantization bins)
     smoothed_hist = moving_average(forward_hist_pdf, window_size=HIST_QUANT_BIN_RATIO*SMOOTH_WINDOW)
     smoothed_grad = moving_average(grad_hist_pdf, window_size=HIST_QUANT_BIN_RATIO*SMOOTH_WINDOW)
 
@@ -512,10 +512,8 @@ def _plot_SA_tensor_histogram(
     ################
     # FORWARD PLOT #
     ################
-    # Create the overlay subplot, a small plot at the top left of the figure
+    # Create the overlay subplot for the forward data, in a small plot at the top left of the figure
     ax_sub = fig.add_axes(sum_pos_1)
-
-    # Fill in mini plot for forward data
     fill_in_mean_subplot(
         forward_hist_pdf,
         zero_bin_forward_value,
@@ -525,7 +523,7 @@ def _plot_SA_tensor_histogram(
         data_name="Forward Activation",
     )
 
-    # Fill in the same for the gradients
+    # Create the same for the gradients
     ax_2_sub = fig.add_axes(sum_pos_2)
     fill_in_mean_subplot(
         grad_hist_pdf,

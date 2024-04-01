@@ -149,7 +149,7 @@ def add_activation_forward_hooks(
     # Add activation-hist pre-forward hooks to the desired quantizable module
     for name, module in model.named_modules():
         if hasattr(module, "fake_quant_enabled") and "weight_fake_quant" not in name:
-            if conditions_met and not conditions_met(module):
+            if conditions_met and not conditions_met(module, name):
                 logger.info(
                     f"The conditons for adding an activation hook to module {name} were not met."
                 )

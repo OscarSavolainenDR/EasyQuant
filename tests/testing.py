@@ -10,7 +10,7 @@ import ipdb
 from typing import Union, Dict, Any, Tuple
 
 from model.resnet import resnet18
-from evaluate import evaluate
+from tests.evaluate.evaluate import evaluate
 from utils.ipdb_hook import ipdb_sys_excepthook
 
 from quant_modules.state_toggling import (
@@ -323,6 +323,7 @@ out = fx_model(input)  # Test we can feed something through the model
 
 
 def conditions_met_forward_act_hook(module):
+    ipdb.set_trace()
     return True
 
 
@@ -392,7 +393,7 @@ for _ in range(2):
     input_batch = input_tensor.unsqueeze(
         0
     )  # create a mini-batch as expected by the model
-    # JUST FOR TESTING THE PERFECT QUANT OF FORST QUANTSTUB
+    # JUST FOR TESTING THE PERFECT QUANT OF FIRST QUANTSTUB
     # input_batch = torch.randint(0, 255, (1, 3, 256, 256))/ 255
     output = fx_model(input_batch)
 
@@ -410,4 +411,4 @@ plot_quant_act_SA_hist(
 )
 XXX
 
-TODO: test conditions met callable
+#TODO: test conditions met callable
