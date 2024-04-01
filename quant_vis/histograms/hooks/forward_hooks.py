@@ -153,7 +153,7 @@ def add_activation_forward_hooks(
                 logger.info(
                     f"The conditons for adding an activation hook to module {name} were not met."
                 )
-                return
+                continue
 
             hook_handle = module.register_forward_pre_hook(
                 activation_forward_histogram_hook(

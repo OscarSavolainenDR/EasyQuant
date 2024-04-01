@@ -1,5 +1,5 @@
 .gitignore
 boxplots
 quant_analysis.py
-tests/Histogram_plots/*
+Histogram_plots
 __pycache__

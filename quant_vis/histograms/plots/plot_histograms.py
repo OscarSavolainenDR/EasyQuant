@@ -185,7 +185,9 @@ def plot_quant_act_hist(
     params = {}
     params["title"] = plot_title
     log_msg = f"\nPlotting quantized activation tensor histograms"
-    logger.info(log_msg if not plot_title else log_msg + f" for {plot_title}")
+    log_msg = log_msg if not plot_title else log_msg + f" for {plot_title}"
+    log_msg += ". This can take a long time."
+    logger.info(log_msg)
 
     # Create plotting folders
     act_plot_folder = file_path / "activations"
@@ -228,6 +230,7 @@ def plot_quant_weight_hist(
     file_path: Path,
     plot_title: Union[str, None] = None,
     module_name_mapping: Union[Callable, None] = None,
+    conditions_met: Union[Callable, None] = None,
     sum_pos_1: List[float] = [0.18, 0.75, 0.1, 0.1],
     bit_res: int = 8,
 ):
@@ -243,6 +246,8 @@ def plot_quant_weight_hist(
     - file_path (Path): path to the folder in which the files should be plotted.
     - plot_title (str): title given to the plot, which will also include the module's name.
     - module_name_mapping (Callable): a function that edits the name of the module to whatever alias is desired.
+    - conditions_met (Callable): a function that returns True if the conditons are met for
+                                 adding a hook to a module, and false otherwise. Defaults to None.
     - sum_pos_1 (List[float]): coordinates for the sub-plot for the forward histogram
     - bit_res (int): the quantization bit width of the tensor, e.g. 8 for int8.
     """
@@ -255,7 +260,9 @@ def plot_quant_weight_hist(
     params = {}
     params["title"] = plot_title
     log_msg = f"\nPlotting quantized weight tensor histograms"
-    logger.info(log_msg if not plot_title else log_msg + f" for {plot_title}")
+    log_msg = log_msg if not plot_title else log_msg + f" for {plot_title}"
+    log_msg += ". This can take a long time."
+    logger.info(log_msg)
 
     # Create plotting folders
     weight_folder = file_path / "weights"
@@ -267,6 +274,13 @@ def plot_quant_weight_hist(
 
         # Some modules don't have weights, e.g. QuantStubs.
         if hasattr(module, "weight_fake_quant"):
+            # Check if the conditions were met for this module
+            if conditions_met and not conditions_met(module, module_name):
+                logger.info(
+                    f"The conditons for plotting the histogram for the weight tensor of module {module_name} were not met."
+                )
+                continue
+
             # We get the weight histogram from the tensor and its qparams
             weight_histogram = get_weight_quant_histogram(
                 module.weight,
@@ -333,7 +347,9 @@ def plot_quant_act_SA_hist(
     params = {}
     params["title"] = plot_title
     log_msg = f"\nPlotting quantization sensitivity analysis plots"
-    logger.info(log_msg if not plot_title else log_msg + f" for {plot_title}")
+    log_msg = log_msg if not plot_title else log_msg + f" for {plot_title}"
+    log_msg += ". This can take a long time."
+    logger.info(log_msg)
 
     # Create plotting folders
     act_plot_folder = file_path / "sensitivity_analysis" / "activations"

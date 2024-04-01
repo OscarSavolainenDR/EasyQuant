@@ -88,6 +88,9 @@ def backwards_SA_histogram_hook(
     """
 
     def hook(module, inp_grad, out_grad):
+        if name not in act_forward_histograms.data:
+            return
+        
         # Access the values-to-histogram-bins mapping from the forward call
         bin_indices = act_forward_histograms.data[name].bin_indices - 1
         grad = out_grad[0]
