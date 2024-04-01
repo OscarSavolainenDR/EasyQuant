@@ -37,7 +37,9 @@ __all__ = [
 ]
 
 
-def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1) -> nn.Conv2d:
+def conv3x3(
+    in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1
+) -> nn.Conv2d:
     """3x3 convolution with padding"""
     return nn.Conv2d(
         in_planes,
@@ -89,10 +91,12 @@ class BasicBlock(nn.Module):
 
     def modules_to_fuse(self, prefix):
         modules_to_fuse_ = []
-        modules_to_fuse_.append([f'{prefix}.conv1', f'{prefix}.bn1', f'{prefix}.relu1'])
-        modules_to_fuse_.append([f'{prefix}.conv2', f'{prefix}.bn2'])
+        modules_to_fuse_.append([f"{prefix}.conv1", f"{prefix}.bn1", f"{prefix}.relu1"])
+        modules_to_fuse_.append([f"{prefix}.conv2", f"{prefix}.bn2"])
         if self.downsample:
-            modules_to_fuse_.append([f'{prefix}.downsample.0', f'{prefix}.downsample.1'])
+            modules_to_fuse_.append(
+                [f"{prefix}.downsample.0", f"{prefix}.downsample.1"]
+            )
 
         return modules_to_fuse_
 
@@ -145,14 +149,22 @@ class ResNet(nn.Module):
             )
         self.groups = groups
         self.base_width = width_per_group
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False)
+        self.conv1 = nn.Conv2d(
+            3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False
+        )
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, dilate=replace_stride_with_dilation[0])
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1])
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2])
+        self.layer2 = self._make_layer(
+            block, 128, layers[1], stride=2, dilate=replace_stride_with_dilation[0]
+        )
+        self.layer3 = self._make_layer(
+            block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1]
+        )
+        self.layer4 = self._make_layer(
+            block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2]
+        )
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512 * block.expansion, num_classes)
         self.quant = torch.ao.quantization.QuantStub()
@@ -198,7 +210,14 @@ class ResNet(nn.Module):
         layers = []
         layers.append(
             block(
-                self.inplanes, planes, stride, downsample, self.groups, self.base_width, previous_dilation, norm_layer
+                self.inplanes,
+                planes,
+                stride,
+                downsample,
+                self.groups,
+                self.base_width,
+                previous_dilation,
+                norm_layer,
             )
         )
         self.inplanes = planes * block.expansion
@@ -214,17 +233,16 @@ class ResNet(nn.Module):
                 )
             )
 
-
         return nn.Sequential(*layers)
 
     def modules_to_fuse(self):
         modules_to_fuse_ = []
-        modules_to_fuse_.append(['conv1', 'bn1', 'relu'])
+        modules_to_fuse_.append(["conv1", "bn1", "relu"])
 
-        for layer_str in ['layer1', 'layer2', 'layer3', 'layer4']:
-            layer = eval(f'self.{layer_str}')
+        for layer_str in ["layer1", "layer2", "layer3", "layer4"]:
+            layer = eval(f"self.{layer_str}")
             for block_nb in range(len(layer)):
-                prefix = f'{layer_str}.{block_nb}'
+                prefix = f"{layer_str}.{block_nb}"
                 modules_to_fuse_layer = layer[block_nb].modules_to_fuse(prefix)
                 modules_to_fuse_.extend(modules_to_fuse_layer)
 
@@ -302,7 +320,9 @@ class ResNet18_Weights(WeightsEnum):
 
 
 @handle_legacy_interface(weights=("pretrained", ResNet18_Weights.IMAGENET1K_V1))
-def resnet18(*, weights: Optional[ResNet18_Weights] = None, progress: bool = True, **kwargs: Any) -> ResNet:
+def resnet18(
+    *, weights: Optional[ResNet18_Weights] = None, progress: bool = True, **kwargs: Any
+) -> ResNet:
     """ResNet-18 from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`__.
 
     Args:

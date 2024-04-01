@@ -26,7 +26,7 @@ from torch.ao.quantization.observer import (
     default_fixed_qparams_range_0to1_observer,
     default_fixed_qparams_range_neg1to1_observer,
 )
-from BQ import BQ
+from .BQ import BQ
 
 __all__ = [
     "BQFakeQuantize",
@@ -48,18 +48,28 @@ __all__ = [
     "default_histogram_fake_quant",
 ]
 
-# Functions for sorting the qscheme
-def _is_per_channel(qscheme: 'torch.qscheme') -> bool:
-    return qscheme in [torch.per_channel_symmetric, torch.per_channel_affine, torch.per_channel_affine_float_qparams]
 
-def _is_per_tensor(qscheme: 'torch.qscheme') -> bool:
+# Functions for sorting the qscheme
+def _is_per_channel(qscheme: "torch.qscheme") -> bool:
+    return qscheme in [
+        torch.per_channel_symmetric,
+        torch.per_channel_affine,
+        torch.per_channel_affine_float_qparams,
+    ]
+
+
+def _is_per_tensor(qscheme: "torch.qscheme") -> bool:
     return qscheme in [torch.per_tensor_symmetric, torch.per_tensor_affine]
 
-def _is_symmetric_quant(qscheme: 'torch.qscheme') -> bool:
+
+def _is_symmetric_quant(qscheme: "torch.qscheme") -> bool:
     return qscheme in [torch.per_tensor_symmetric, torch.per_channel_symmetric]
 
-def _is_float_qparams(qscheme: 'torch.qscheme') -> bool:
-    return qscheme in [torch.per_channel_affine_float_qparams, ]
+
+def _is_float_qparams(qscheme: "torch.qscheme") -> bool:
+    return qscheme in [
+        torch.per_channel_affine_float_qparams,
+    ]
 
 
 class BQFakeQuantize(TorchFakeQuantize, BQ):
@@ -78,13 +88,28 @@ class BQFakeQuantize(TorchFakeQuantize, BQ):
         ) * scale
 
     """
-    def __init__(self, observer=MovingAverageMinMaxObserver, quant_min=None, quant_max=None, is_dynamic=False, **observer_kwargs):
-        super().__init__(observer=observer, quant_min=quant_min, quant_max=quant_max, is_dynamic=is_dynamic, **observer_kwargs)
-        delattr(self, 'observer_enabled')
-        self.register_buffer('PTQ_observer_enabled', torch.tensor([0], dtype=torch.uint8))
+
+    def __init__(
+        self,
+        observer=MovingAverageMinMaxObserver,
+        quant_min=None,
+        quant_max=None,
+        is_dynamic=False,
+        **observer_kwargs,
+    ):
+        super().__init__(
+            observer=observer,
+            quant_min=quant_min,
+            quant_max=quant_max,
+            is_dynamic=is_dynamic,
+            **observer_kwargs,
+        )
+        delattr(self, "observer_enabled")
+        self.register_buffer(
+            "PTQ_observer_enabled", torch.tensor([0], dtype=torch.uint8)
+        )
         self.observer = self._get_PTQ_forward()
         self.transform = self._get_fake_quant_forward()
-
 
     @torch.jit.export
     def calculate_qparams(self):
@@ -123,7 +148,6 @@ class BQFakeQuantize(TorchFakeQuantize, BQ):
         self.PTQ_observer_enabled[0] = 0
         self.observer = self._get_dummy_forward()
 
-
     ##########################
     # FORWARD METHOD GETTERS #
     ##########################
@@ -142,7 +166,9 @@ class BQFakeQuantize(TorchFakeQuantize, BQ):
         elif _is_per_tensor(self.qscheme):
             return self.fake_quant_per_tensor_forward
         else:
-            raise NotImplementedError("FakeQuantize only supports per-channel or per-tensor quantization")
+            raise NotImplementedError(
+                "FakeQuantize only supports per-channel or per-tensor quantization"
+            )
 
     def _get_PTQ_forward(self):
         """
@@ -170,8 +196,13 @@ class BQFakeQuantize(TorchFakeQuantize, BQ):
         does per-channel quantization.
         """
         X = torch.fake_quantize_per_channel_affine(
-                    X, self.scale, self.zero_point,
-                    self.ch_axis, self.activation_post_process.quant_min, self.activation_post_process.quant_max)
+            X,
+            self.scale,
+            self.zero_point,
+            self.ch_axis,
+            self.activation_post_process.quant_min,
+            self.activation_post_process.quant_max,
+        )
         return X
 
     def fake_quant_per_tensor_forward(self, X):
@@ -180,8 +211,12 @@ class BQFakeQuantize(TorchFakeQuantize, BQ):
         does per-tensor quantization.
         """
         X = torch.fake_quantize_per_tensor_affine(
-                    X, self.scale, self.zero_point,
-                    self.activation_post_process.quant_min, self.activation_post_process.quant_max)
+            X,
+            self.scale,
+            self.zero_point,
+            self.activation_post_process.quant_min,
+            self.activation_post_process.quant_max,
+        )
         return X
 
     ##########################
@@ -197,7 +232,9 @@ class BQFakeQuantize(TorchFakeQuantize, BQ):
         # Returns the qparams calculated by the PTQ observer
         _scale, _zero_point = self.calculate_qparams()
         # Overwrites the scale and zero-point of `self`
-        _scale, _zero_point = _scale.to(self.scale.device), _zero_point.to(self.zero_point.device)
+        _scale, _zero_point = _scale.to(self.scale.device), _zero_point.to(
+            self.zero_point.device
+        )
         if self.scale.shape != _scale.shape:
             self.scale.resize_(_scale.shape)
             self.zero_point.resize_(_zero_point.shape)
@@ -212,12 +249,23 @@ class BQFakeQuantize(TorchFakeQuantize, BQ):
     ############
     @torch.jit.export
     def extra_repr(self):
-        return 'observer_call={}, transform_call={}, fake_quant_enabled={}, PTQ_observer_enabled={}, ' \
-               'quant_min={}, quant_max={}, dtype={}, qscheme={}, ch_axis={}, ' \
-               'scale={}, zero_point={}'.format(
-                   self.observer.__name__, self.transform.__name__, self.fake_quant_enabled, self.PTQ_observer_enabled,
-                   self.activation_post_process.quant_min, self.activation_post_process.quant_max,
-                   self.dtype, self.qscheme, self.ch_axis, self.scale, self.zero_point)
+        return (
+            "observer_call={}, transform_call={}, fake_quant_enabled={}, PTQ_observer_enabled={}, "
+            "quant_min={}, quant_max={}, dtype={}, qscheme={}, ch_axis={}, "
+            "scale={}, zero_point={}".format(
+                self.observer.__name__,
+                self.transform.__name__,
+                self.fake_quant_enabled,
+                self.PTQ_observer_enabled,
+                self.activation_post_process.quant_min,
+                self.activation_post_process.quant_max,
+                self.dtype,
+                self.qscheme,
+                self.ch_axis,
+                self.scale,
+                self.zero_point,
+            )
+        )
 
 
 class BQFixedQParamsFakeQuantize(BQFakeQuantize, BQ):
@@ -231,13 +279,17 @@ class BQFixedQParamsFakeQuantize(BQFakeQuantize, BQ):
     # TODO: rename observer to observer_ctr
     def __init__(self, observer):
         super().__init__(observer=observer)
-        assert type(self.activation_post_process) == FixedQParamsObserver, \
-            f"{self.__class__.__name__}'s observer must be a {FixedQParamsObserver.__name__}"
+        assert (
+            type(self.activation_post_process) == FixedQParamsObserver
+        ), f"{self.__class__.__name__}'s observer must be a {FixedQParamsObserver.__name__}"
         self._observer_ctr = observer
         self.scale = self.activation_post_process.scale
         self.zero_point = self.activation_post_process.zero_point
-        assert _is_per_tensor(self.qscheme), 'Only per tensor quantization is supported' + \
-            ' FixedQParamsFakeQuantize module, got qscheme:' + str(self.qscheme)
+        assert _is_per_tensor(self.qscheme), (
+            "Only per tensor quantization is supported"
+            + " FixedQParamsFakeQuantize module, got qscheme:"
+            + str(self.qscheme)
+        )
 
     @torch.jit.export
     def calculate_qparams(self):
@@ -246,79 +298,115 @@ class BQFixedQParamsFakeQuantize(BQFakeQuantize, BQ):
     @torch.jit.export
     def extra_repr(self):
         """Define a string representation of the object's attributes."""
-        return 'observer_call={}, transform_call={}, fake_quant_enabled={}, PTQ_observer_enabled={}, scale={}, zero_point={}, ' \
-               'dtype={}, quant_min={}, quant_max={}, qscheme={}'.format(
-                   self.observer.__name__, self.transform.__name, self.fake_quant_enabled, self.PTQ_observer_enabled,
-                   self.scale, self.zero_point, self.dtype,
-                   self.activation_post_process.quant_min, self.activation_post_process.quant_max, self.qscheme)
+        return (
+            "observer_call={}, transform_call={}, fake_quant_enabled={}, PTQ_observer_enabled={}, scale={}, zero_point={}, "
+            "dtype={}, quant_min={}, quant_max={}, qscheme={}".format(
+                self.observer.__name__,
+                self.transform.__name,
+                self.fake_quant_enabled,
+                self.PTQ_observer_enabled,
+                self.scale,
+                self.zero_point,
+                self.dtype,
+                self.activation_post_process.quant_min,
+                self.activation_post_process.quant_max,
+                self.qscheme,
+            )
+        )
 
 
-
-default_fake_quant = BQFakeQuantize.with_args(observer=MovingAverageMinMaxObserver, quant_min=0, quant_max=255,
-                                            dtype=torch.quint8, qscheme=torch.per_tensor_affine, reduce_range=True)
+default_fake_quant = BQFakeQuantize.with_args(
+    observer=MovingAverageMinMaxObserver,
+    quant_min=0,
+    quant_max=255,
+    dtype=torch.quint8,
+    qscheme=torch.per_tensor_affine,
+    reduce_range=True,
+)
 """
 Default fake_quant for activations.
 """
 
-default_weight_fake_quant = BQFakeQuantize.with_args(observer=MovingAverageMinMaxObserver, quant_min=-128, quant_max=127,
-                                                   dtype=torch.qint8, qscheme=torch.per_tensor_symmetric, reduce_range=False)
+default_weight_fake_quant = BQFakeQuantize.with_args(
+    observer=MovingAverageMinMaxObserver,
+    quant_min=-128,
+    quant_max=127,
+    dtype=torch.qint8,
+    qscheme=torch.per_tensor_symmetric,
+    reduce_range=False,
+)
 """
 Default fake_quant for weights.
 Observer is memoryless since averaging_constant is 1.
 """
 
 default_dynamic_fake_quant = BQFakeQuantize.with_args(
-    observer=MovingAverageMinMaxObserver, quant_min=0, quant_max=255, is_dynamic=True,
-    dtype=torch.quint8, averaging_constant=1)
+    observer=MovingAverageMinMaxObserver,
+    quant_min=0,
+    quant_max=255,
+    is_dynamic=True,
+    dtype=torch.quint8,
+    averaging_constant=1,
+)
 """
 Default dynamic fake_quant for activations.
 """
 
-default_fixed_qparams_range_neg1to1_fake_quant = (
-    BQFixedQParamsFakeQuantize.with_args(observer=default_fixed_qparams_range_neg1to1_observer)
+default_fixed_qparams_range_neg1to1_fake_quant = BQFixedQParamsFakeQuantize.with_args(
+    observer=default_fixed_qparams_range_neg1to1_observer
 )
-default_fixed_qparams_range_0to1_fake_quant = (
-    BQFixedQParamsFakeQuantize.with_args(observer=default_fixed_qparams_range_0to1_observer)
+default_fixed_qparams_range_0to1_fake_quant = BQFixedQParamsFakeQuantize.with_args(
+    observer=default_fixed_qparams_range_0to1_observer
 )
 # TODO: the following 2 variables are kept for backwards compatibility; remove after a few releases
-default_symmetric_fixed_qparams_fake_quant = default_fixed_qparams_range_neg1to1_fake_quant
+default_symmetric_fixed_qparams_fake_quant = (
+    default_fixed_qparams_range_neg1to1_fake_quant
+)
 default_affine_fixed_qparams_fake_quant = default_fixed_qparams_range_0to1_fake_quant
 
-default_per_channel_weight_fake_quant = BQFakeQuantize.with_args(observer=MovingAveragePerChannelMinMaxObserver,
-                                                               quant_min=-128,
-                                                               quant_max=127,
-                                                               dtype=torch.qint8,
-                                                               qscheme=torch.per_channel_symmetric,
-                                                               reduce_range=False,
-                                                               ch_axis=0)
+default_per_channel_weight_fake_quant = BQFakeQuantize.with_args(
+    observer=MovingAveragePerChannelMinMaxObserver,
+    quant_min=-128,
+    quant_max=127,
+    dtype=torch.qint8,
+    qscheme=torch.per_channel_symmetric,
+    reduce_range=False,
+    ch_axis=0,
+)
 """
 Default fake_quant for per-channel weights.
 Observer is memoryless since averaging_constant is 1.
 """
-default_embedding_fake_quant = BQFakeQuantize.with_args(observer=MovingAveragePerChannelMinMaxObserver,
-                                                      qscheme=torch.per_channel_affine_float_qparams,
-                                                      dtype=torch.quint8,
-                                                      quant_min=0,
-                                                      quant_max=255,
-                                                      ch_axis=0,
-                                                      averaging_constant=1)
+default_embedding_fake_quant = BQFakeQuantize.with_args(
+    observer=MovingAveragePerChannelMinMaxObserver,
+    qscheme=torch.per_channel_affine_float_qparams,
+    dtype=torch.quint8,
+    quant_min=0,
+    quant_max=255,
+    ch_axis=0,
+    averaging_constant=1,
+)
 """
 Default fake_quant for embeddings.
 Observer is memoryless since averaging_constant is 1.
 """
 
-default_embedding_fake_quant_4bit = BQFakeQuantize.with_args(observer=MovingAveragePerChannelMinMaxObserver,
-                                                           qscheme=torch.per_channel_affine_float_qparams,
-                                                           ch_axis=0,
-                                                           dtype=torch.quint4x2,
-                                                           averaging_constant=1)
+default_embedding_fake_quant_4bit = BQFakeQuantize.with_args(
+    observer=MovingAveragePerChannelMinMaxObserver,
+    qscheme=torch.per_channel_affine_float_qparams,
+    ch_axis=0,
+    dtype=torch.quint4x2,
+    averaging_constant=1,
+)
 
 """
 Fake_quant for activations using a histogram..
 """
-default_histogram_fake_quant = BQFakeQuantize.with_args(observer=HistogramObserver,
-                                                      quant_min=0,
-                                                      quant_max=255,
-                                                      dtype=torch.quint8,
-                                                      qscheme=torch.per_tensor_affine,
-                                                      reduce_range=True)
+default_histogram_fake_quant = BQFakeQuantize.with_args(
+    observer=HistogramObserver,
+    quant_min=0,
+    quant_max=255,
+    dtype=torch.quint8,
+    qscheme=torch.per_tensor_affine,
+    reduce_range=True,
+)

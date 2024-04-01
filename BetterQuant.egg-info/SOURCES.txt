@@ -1,0 +1,10 @@
+LICENSE
+README.md
+setup.py
+BetterQuant.egg-info/PKG-INFO
+BetterQuant.egg-info/SOURCES.txt
+BetterQuant.egg-info/dependency_links.txt
+BetterQuant.egg-info/top_level.txt
+tests/__init__.py
+tests/evaluate.py
+tests/testing.py

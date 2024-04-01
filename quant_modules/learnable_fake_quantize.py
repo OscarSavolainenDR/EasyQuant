@@ -1,11 +1,13 @@
 import torch
-from torch.ao.quantization._learnable_fake_quantize import _LearnableFakeQuantize as TorchLearnableFakeQuantize
-from torch.nn.parameter import Parameter
+from torch.ao.quantization._learnable_fake_quantize import (
+    _LearnableFakeQuantize as TorchLearnableFakeQuantize,
+)
 from typing import List
 
-from BQ import BQ
+from .BQ import BQ
 
 __all__: List[str] = []
+
 
 class BQLearnableFakeQuantize(TorchLearnableFakeQuantize, BQ):
     r"""This is a wrapper around Torch's `_LearnableFakeQuantize` class. It modularizes the forward calls,
@@ -25,13 +27,32 @@ class BQLearnableFakeQuantize(TorchLearnableFakeQuantize, BQ):
         ) * scale
 
     """
-    def __init__(self, observer, quant_min=0, quant_max=255, scale=1., zero_point=0., channel_len=-1,
-                 use_grad_scaling=False, **observer_kwargs):
-        super().__init__(observer=observer, quant_min=quant_min, quant_max=quant_max, scale=scale,
-                         zero_point=zero_point, channel_len=channel_len, use_grad_scaling=use_grad_scaling,
-                         **observer_kwargs)
-        delattr(self, 'observer_enabled')
-        self.register_buffer('PTQ_observer_enabled', torch.tensor([0], dtype=torch.uint8))
+
+    def __init__(
+        self,
+        observer,
+        quant_min=0,
+        quant_max=255,
+        scale=1.0,
+        zero_point=0.0,
+        channel_len=-1,
+        use_grad_scaling=False,
+        **observer_kwargs,
+    ):
+        super().__init__(
+            observer=observer,
+            quant_min=quant_min,
+            quant_max=quant_max,
+            scale=scale,
+            zero_point=zero_point,
+            channel_len=channel_len,
+            use_grad_scaling=use_grad_scaling,
+            **observer_kwargs,
+        )
+        delattr(self, "observer_enabled")
+        self.register_buffer(
+            "PTQ_observer_enabled", torch.tensor([0], dtype=torch.uint8)
+        )
         self.observer = self._get_PTQ_forward()
         self.transform = self._get_fake_quant_forward()
         # The symmetric/affine and grad-scaling/no-grad-scaling forward calls
@@ -84,8 +105,8 @@ class BQLearnableFakeQuantize(TorchLearnableFakeQuantize, BQ):
 
     @torch.jit.export
     def observe_quant_params(self):
-        print(f'_LearnableFakeQuantize Scale: {self.scale.detach()}')
-        print(f'_LearnableFakeQuantize Zero Point: {self.zero_point.detach()}')
+        print(f"_LearnableFakeQuantize Scale: {self.scale.detach()}")
+        print(f"_LearnableFakeQuantize Zero Point: {self.zero_point.detach()}")
 
     @torch.jit.export
     def calculate_qparams(self):
@@ -97,7 +118,12 @@ class BQLearnableFakeQuantize(TorchLearnableFakeQuantize, BQ):
         """
         self.scale.data.clamp_(min=self.eps.item())  # type: ignore[operator]
         scale = self.scale.detach()
-        zero_point = self.zero_point.detach().round().clamp(self.quant_min, self.quant_max).long()
+        zero_point = (
+            self.zero_point.detach()
+            .round()
+            .clamp(self.quant_min, self.quant_max)
+            .long()
+        )
         return scale, zero_point
 
     def forward(self, X):
@@ -196,7 +222,9 @@ class BQLearnableFakeQuantize(TorchLearnableFakeQuantize, BQ):
         elif self.fake_quant_per_tensor_forward:
             return self.fake_quant_per_tensor_forward
         else:
-            raise NotImplementedError("_LearnableFakeQuantize only supports per-tensor and per-channel quantization")
+            raise NotImplementedError(
+                "_LearnableFakeQuantize only supports per-tensor and per-channel quantization"
+            )
 
     def _get_symmetric_or_affine_forward(self):
         """
@@ -277,27 +305,43 @@ class BQLearnableFakeQuantize(TorchLearnableFakeQuantize, BQ):
         The per-channel fake quant forward call.
         """
         return torch._fake_quantize_learnable_per_channel_affine(
-                X, self.scale, self.zero_point, self.ch_axis,
-                self.quant_min, self.quant_max, grad_factor)
+            X,
+            self.scale,
+            self.zero_point,
+            self.ch_axis,
+            self.quant_min,
+            self.quant_max,
+            grad_factor,
+        )
 
     def fake_quant_per_tensor_forward(self, X, grad_factor):
         """
         The per-channel fake quant forward call.
         """
         return torch._fake_quantize_learnable_per_tensor_affine(
-                    X, self.scale, self.zero_point,
-                    self.quant_min, self.quant_max, grad_factor)
+            X, self.scale, self.zero_point, self.quant_min, self.quant_max, grad_factor
+        )
+
     ############
     # PRINTING #
     ############
     @torch.jit.export
     def extra_repr(self):
-        return 'observer_call={}, transform_call={}, fake_quant_enabled={}, PTQ_observer_enabled={}, ' \
-               'grad_scaling={}, quant_min={}, quant_max={}, dtype={}, qscheme={}, ch_axis={}, ' \
-               'scale={}, zero_point={}'.format(
-                   self.observer.__name__, self.transform.__name__, self.fake_quant_enabled, self.PTQ_observer_enabled,
-                   self.use_grad_scaling, self.activation_post_process.quant_min, self.activation_post_process.quant_max,
-                   self.dtype, self.qscheme, self.ch_axis, self.scale, self.zero_point)
-
-
-
+        return (
+            "observer_call={}, transform_call={}, fake_quant_enabled={}, PTQ_observer_enabled={}, "
+            "grad_scaling={}, quant_min={}, quant_max={}, dtype={}, qscheme={}, ch_axis={}, "
+            "scale={}, zero_point={}".format(
+                self.observer.__name__,
+                self.transform.__name__,
+                self.fake_quant_enabled,
+                self.PTQ_observer_enabled,
+                self.use_grad_scaling,
+                self.activation_post_process.quant_min,
+                self.activation_post_process.quant_max,
+                self.dtype,
+                self.qscheme,
+                self.ch_axis,
+                self.scale,
+                self.zero_point,
+            )
+        )
