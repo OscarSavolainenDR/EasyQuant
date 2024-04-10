@@ -3,3 +3,4 @@ boxplots
 quant_analysis.py
 Histogram_plots
 __pycache__
+*.egg-info
