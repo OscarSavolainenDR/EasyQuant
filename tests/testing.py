@@ -41,7 +41,7 @@ model = resnet18(weights="ResNet18_Weights.DEFAULT")
 # print(model)
 
 # Step 1: architecture changes
-# QuantStubs (we will do FloatFunctionals later)
+# QuantStubs (placed)
 # Done
 
 # Step 2: fuse modules (recommended but not necessary)
