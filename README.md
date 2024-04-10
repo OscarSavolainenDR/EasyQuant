@@ -9,10 +9,10 @@ It is super easy to get started with (incredible pun), just pip install, import,
 
 ## Features
 This library has some cool features, such as:
-- Full comparability with Eager, FX Graph, and Export Mode quantization.
-- Significantly improve the speed of the Quantization Aware Training (QAT) and Post-Training Quantization (PTQ) forward calls. Save GPU time, save money!
-- A large suite of non-natively-supported-by-PyTorch PTQ observers, e.g. fixed weight observers, clamp-to-some-percentile observers, KL-divergence minimizing observers, etc.
+- Full compatability with Eager, FX Graph, and Export Mode quantization. It's downstream of PyTorch, so everything will just work.
 - Custom quantization-specific visualization and analysis tools: see how your tensor interacts with its quantization grid, and see what parts of your quantization range matter the most with Jacobian Sensitivity Analysis plots.
+- Significantly improve the speed of the Quantization Aware Training (QAT) and Post-Training Quantization (PTQ) forward calls with our custom quantization modules. Save GPU time, save money!
+- A large suite of non-natively-supported-by-PyTorch PTQ observers, e.g. fixed weight observers, clamp-to-some-percentile observers, KL-divergence minimizing observers, etc.
 - TODO: An extensive array of unit tests to catch your deadly silent errors, and make them loud :fireworks:.
 
 
@@ -30,5 +30,4 @@ I'd generally suggest adding any folder that you generate plots into (e.g. Sensi
 
 ## How to Contribute
 Open an issue, and we'll go from there! This is a very new library.
-
 
