@@ -21,6 +21,8 @@ def add_sensitivity_analysis_hooks(
     Adds the required forward and baxckwards hooks to gather the required data for the
     forward and backwards histograms, for the combined forward / sensitivity analysis
     plots.
+    NOTE: the `bit_res` parameter does not control the quantization reoslution of the model, only of the
+    histograms. Ideally they should match. 
     """
     act_forward_histograms = add_activation_forward_hooks(
         model, conditions_met=conditions_met, bit_res=bit_res

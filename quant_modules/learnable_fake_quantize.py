@@ -8,7 +8,6 @@ from .EQ import EQ
 
 __all__: List[str] = []
 
-
 class EQLearnableFakeQuantize(TorchLearnableFakeQuantize, EQ):
     r"""This is a wrapper around Torch's `_LearnableFakeQuantize` class. It modularizes the forward calls,
     speeding up their execution and allowing for the scalable introduction of different `observer`
