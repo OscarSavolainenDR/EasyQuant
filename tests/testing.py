@@ -19,9 +19,9 @@ from quant_modules.state_toggling import (
     disable_fake_quant,
     disable_PTQ_observer,
 )
-from quant_modules.fake_quantize import BQFakeQuantize as FakeQuantize
+from quant_modules.fake_quantize import EQFakeQuantize as FakeQuantize
 from quant_modules.learnable_fake_quantize import (
-    BQLearnableFakeQuantize as LearnableFakeQuantize,
+    EQLearnableFakeQuantize as LearnableFakeQuantize,
 )
 from torch.ao.quantization.quantization_mappings import (
     get_default_dynamic_quant_module_mappings,

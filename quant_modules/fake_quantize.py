@@ -26,11 +26,11 @@ from torch.ao.quantization.observer import (
     default_fixed_qparams_range_0to1_observer,
     default_fixed_qparams_range_neg1to1_observer,
 )
-from .BQ import BQ
+from .EQ import EQ
 
 __all__ = [
-    "BQFakeQuantize",
-    "BQFixedQParamsFakeQuantize",
+    "EQFakeQuantize",
+    "EQFixedQParamsFakeQuantize",
     "disable_fake_quant",
     "disable_PTQ_observer",
     "enable_fake_quant",
@@ -72,7 +72,7 @@ def _is_float_qparams(qscheme: "torch.qscheme") -> bool:
     ]
 
 
-class BQFakeQuantize(TorchFakeQuantize, BQ):
+class EQFakeQuantize(TorchFakeQuantize, EQ):
     r"""This is a wrapper around Torch's `FakeQuantize` class. It modularizes the forward calls,
     speeding up their execution and allowing for the scalable introduction of different `observer`
     and `transform` algorithms.
@@ -268,7 +268,7 @@ class BQFakeQuantize(TorchFakeQuantize, BQ):
         )
 
 
-class BQFixedQParamsFakeQuantize(BQFakeQuantize, BQ):
+class EQFixedQParamsFakeQuantize(EQFakeQuantize, EQ):
     """Simulate quantize and dequantize in training time.
 
     Simulate quantize and dequantize with fixed quantization
@@ -315,7 +315,7 @@ class BQFixedQParamsFakeQuantize(BQFakeQuantize, BQ):
         )
 
 
-default_fake_quant = BQFakeQuantize.with_args(
+default_fake_quant = EQFakeQuantize.with_args(
     observer=MovingAverageMinMaxObserver,
     quant_min=0,
     quant_max=255,
@@ -327,7 +327,7 @@ default_fake_quant = BQFakeQuantize.with_args(
 Default fake_quant for activations.
 """
 
-default_weight_fake_quant = BQFakeQuantize.with_args(
+default_weight_fake_quant = EQFakeQuantize.with_args(
     observer=MovingAverageMinMaxObserver,
     quant_min=-128,
     quant_max=127,
@@ -340,7 +340,7 @@ Default fake_quant for weights.
 Observer is memoryless since averaging_constant is 1.
 """
 
-default_dynamic_fake_quant = BQFakeQuantize.with_args(
+default_dynamic_fake_quant = EQFakeQuantize.with_args(
     observer=MovingAverageMinMaxObserver,
     quant_min=0,
     quant_max=255,
@@ -352,10 +352,10 @@ default_dynamic_fake_quant = BQFakeQuantize.with_args(
 Default dynamic fake_quant for activations.
 """
 
-default_fixed_qparams_range_neg1to1_fake_quant = BQFixedQParamsFakeQuantize.with_args(
+default_fixed_qparams_range_neg1to1_fake_quant = EQFixedQParamsFakeQuantize.with_args(
     observer=default_fixed_qparams_range_neg1to1_observer
 )
-default_fixed_qparams_range_0to1_fake_quant = BQFixedQParamsFakeQuantize.with_args(
+default_fixed_qparams_range_0to1_fake_quant = EQFixedQParamsFakeQuantize.with_args(
     observer=default_fixed_qparams_range_0to1_observer
 )
 # TODO: the following 2 variables are kept for backwards compatibility; remove after a few releases
@@ -364,7 +364,7 @@ default_symmetric_fixed_qparams_fake_quant = (
 )
 default_affine_fixed_qparams_fake_quant = default_fixed_qparams_range_0to1_fake_quant
 
-default_per_channel_weight_fake_quant = BQFakeQuantize.with_args(
+default_per_channel_weight_fake_quant = EQFakeQuantize.with_args(
     observer=MovingAveragePerChannelMinMaxObserver,
     quant_min=-128,
     quant_max=127,
@@ -377,7 +377,7 @@ default_per_channel_weight_fake_quant = BQFakeQuantize.with_args(
 Default fake_quant for per-channel weights.
 Observer is memoryless since averaging_constant is 1.
 """
-default_embedding_fake_quant = BQFakeQuantize.with_args(
+default_embedding_fake_quant = EQFakeQuantize.with_args(
     observer=MovingAveragePerChannelMinMaxObserver,
     qscheme=torch.per_channel_affine_float_qparams,
     dtype=torch.quint8,
@@ -391,7 +391,7 @@ Default fake_quant for embeddings.
 Observer is memoryless since averaging_constant is 1.
 """
 
-default_embedding_fake_quant_4bit = BQFakeQuantize.with_args(
+default_embedding_fake_quant_4bit = EQFakeQuantize.with_args(
     observer=MovingAveragePerChannelMinMaxObserver,
     qscheme=torch.per_channel_affine_float_qparams,
     ch_axis=0,
@@ -402,7 +402,7 @@ default_embedding_fake_quant_4bit = BQFakeQuantize.with_args(
 """
 Fake_quant for activations using a histogram..
 """
-default_histogram_fake_quant = BQFakeQuantize.with_args(
+default_histogram_fake_quant = EQFakeQuantize.with_args(
     observer=HistogramObserver,
     quant_min=0,
     quant_max=255,

@@ -4,12 +4,12 @@ from torch.ao.quantization._learnable_fake_quantize import (
 )
 from typing import List
 
-from .BQ import BQ
+from .EQ import EQ
 
 __all__: List[str] = []
 
 
-class BQLearnableFakeQuantize(TorchLearnableFakeQuantize, BQ):
+class EQLearnableFakeQuantize(TorchLearnableFakeQuantize, EQ):
     r"""This is a wrapper around Torch's `_LearnableFakeQuantize` class. It modularizes the forward calls,
     speeding up their execution and allowing for the scalable introduction of different `observer`
     and `transform` algorithms.
@@ -25,7 +25,6 @@ class BQLearnableFakeQuantize(TorchLearnableFakeQuantize, BQ):
         x_out = (
           clamp(round(x/scale + zero_point), quant_min, quant_max) - zero_point
         ) * scale
-
     """
 
     def __init__(

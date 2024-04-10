@@ -1,6 +1,6 @@
 import torch
 import re
-from .BQ import BQ
+from .EQ import EQ
 
 
 #######################################
@@ -15,7 +15,7 @@ def disable_fake_quant(mod):
       model.apply(torch.ao.quantization.disable_fake_quant)
 
     """
-    if isinstance(mod, BQ) or _is_fake_quant_script_module(mod):
+    if isinstance(mod, EQ) or _is_fake_quant_script_module(mod):
         mod.disable_fake_quant()
 
 
@@ -28,7 +28,7 @@ def enable_fake_quant(mod):
       model.apply(torch.ao.quantization.enable_fake_quant)
 
     """
-    if isinstance(mod, BQ) or _is_fake_quant_script_module(mod):
+    if isinstance(mod, EQ) or _is_fake_quant_script_module(mod):
         mod.enable_fake_quant()
 
 
@@ -41,7 +41,7 @@ def disable_PTQ_observer(mod):
       model.apply(torch.ao.quantization.disable_PTQ_observer)
 
     """
-    if isinstance(mod, BQ) or _is_fake_quant_script_module(mod):
+    if isinstance(mod, EQ) or _is_fake_quant_script_module(mod):
         mod.disable_PTQ_observer()
 
 
@@ -54,7 +54,7 @@ def enable_PTQ_observer(mod):
       model.apply(torch.ao.quantization.enable_PTQ_observer)
 
     """
-    if isinstance(mod, BQ) or _is_fake_quant_script_module(mod):
+    if isinstance(mod, EQ) or _is_fake_quant_script_module(mod):
         mod.enable_PTQ_observer()
 
 
