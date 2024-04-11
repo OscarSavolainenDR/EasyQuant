@@ -1,5 +1,0 @@
-.gitignore
-# Or whatever you call your file with generated plots
-Histogram_plots
-__pycache__
-*.egg-info
