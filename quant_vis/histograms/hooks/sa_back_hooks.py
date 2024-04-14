@@ -23,6 +23,17 @@ def add_sensitivity_analysis_hooks(
     plots.
     NOTE: the `bit_res` parameter does not control the quantization reoslution of the model, only of the
     histograms. Ideally they should match. 
+
+    `conditions_met` (Callable): This is a function that takes in a module and its name, and returns a boolean
+                    indicating whether one should add the hook to it or not.
+        Example: 
+            ```
+            def conditions_met_forward_act_hook(module: torch.nn.Module, name: str) -> bool:
+                if "hello" in name:
+                    return True
+                else:
+                    return False
+            ```
     """
     act_forward_histograms = add_activation_forward_hooks(
         model, conditions_met=conditions_met, bit_res=bit_res

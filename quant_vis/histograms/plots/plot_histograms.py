@@ -410,6 +410,7 @@ def _plot_SA_tensor_histogram(
 ):
     """
     Function for plotting the histogram of a quantized tensor, overlain with the quantization grid of the tensor.
+    This includes the forward and SA plots.
 
     Inputs:
     - forward_hist (Tuple[torch.Tensor, torch.Tensor, torch.Tensor]): a Torch histogram tuple (histogram, bin edges and bin_indices),
