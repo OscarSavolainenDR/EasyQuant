@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 import matplotlib
+import os
 
 matplotlib.use("Agg")
 
@@ -144,3 +145,15 @@ def moving_average(input_tensor, window_size):
     output_tensor = F.conv1d(input_tensor.unsqueeze(0).unsqueeze(0), kernel, padding=padding)
     
     return output_tensor.squeeze()
+
+###########
+# PATHING #
+###########
+
+def create_double_level_plot_folder(file_path: str, lvl_1: str, lvl_2: str) -> str:
+    weight_plot_folder = (
+        file_path / lvl_1 / lvl_2 
+    )
+    if not os.path.exists(weight_plot_folder):
+        os.makedirs(weight_plot_folder, exist_ok=True)
+    return weight_plot_folder

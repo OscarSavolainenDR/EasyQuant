@@ -15,6 +15,7 @@ from .utils import (
     fill_in_mean_subplot,
     draw_centroids_and_tensor_range,
     moving_average,
+    create_double_level_plot_folder,
 )
 
 from typing import Callable, Tuple, Dict, Union, List
@@ -202,9 +203,7 @@ def plot_quant_act_hist(
     logger.info(log_msg)
 
     # Create plotting folders
-    act_plot_folder = file_path / "activations"
-    if not os.path.exists(act_plot_folder):
-        os.makedirs(act_plot_folder, exist_ok=True)
+    act_plot_folder = create_double_level_plot_folder(file_path, 'activations', 'hists')
 
     # For each module
     for module_name in act_forward_histograms.data:
@@ -244,6 +243,8 @@ def plot_quant_weight_hist(
     module_name_mapping: Union[Callable, None] = None,
     conditions_met: Union[Callable, None] = None,
     sum_pos_1: List[float] = [0.18, 0.60, 0.1, 0.1], 
+    sum_pos_2: List[float] = [0.18, 0.60, 0.1, 0.1], 
+    sensitivity_analysis: bool = False,
     bit_res: int = 8,
 ):
     """
@@ -259,8 +260,10 @@ def plot_quant_weight_hist(
     - plot_title (str): title given to the plot, which will also include the module's name.
     - module_name_mapping (Callable): a function that edits the name of the module to whatever alias is desired.
     - conditions_met (Callable): a function that returns True if the conditons are met for
-                                 adding a hook to a module, and false otherwise. Defaults to None.
+                                adding a hook to a module, and false otherwise. Defaults to None.
     - sum_pos_1 (List[float]): coordinates for the sub-plot for the forward histogram
+    - sensitivity_analysis (bool): whether ot nor, if we have grads for the weight tensor, 
+                                should we plot the sensitivity analysis for the weights.
     - bit_res (int): the quantization bit width of the tensor, e.g. 8 for int8.
     """
 
@@ -276,11 +279,6 @@ def plot_quant_weight_hist(
     log_msg += ". This can take a long time."
     logger.info(log_msg)
 
-    # Create plotting folders
-    weight_folder = file_path / "weights"
-    if not os.path.exists(weight_folder):
-        os.makedirs(weight_folder, exist_ok=True)
-
     # For each module
     for module_name, module in model.named_modules():
 
@@ -294,11 +292,12 @@ def plot_quant_weight_hist(
                 continue
 
             # We get the weight histogram from the tensor and its qparams
-            weight_histogram = get_weight_quant_histogram(
+            weight_histogram, binned_weight_grads = get_weight_quant_histogram(
                 module.weight,
                 module.weight_fake_quant.scale,
                 module.weight_fake_quant.zero_point,
                 module.weight_fake_quant.qscheme,
+                sensitivity_analysis,
                 bit_res,
             )
 
@@ -310,14 +309,35 @@ def plot_quant_weight_hist(
 
             # Weight histograms
             params["act_or_weight"] = "Weight"
-            weight_plot_filename = (
-                weight_folder / f"Weight-hist-{params['module_name']}.png"
-            )
 
             # Plot the weight histogram
-            _plot_single_tensor_histogram(
-                weight_histogram, weight_plot_filename, params, sum_pos_1, bit_res
-            )
+            if sensitivity_analysis and binned_weight_grads is not None:
+                # Create folder
+                weight_plot_folder = create_double_level_plot_folder(file_path, "weights", "sensitivity_analysis")
+                weight_plot_filename = weight_plot_folder / f"Weight-hist-{params['module_name']}.png"
+                
+                # Generate plots
+                _plot_SA_tensor_histogram(
+                    weight_histogram,
+                    binned_weight_grads,
+                    weight_plot_filename,
+                    params=params,
+                    sum_pos_1=sum_pos_1,
+                    sum_pos_2=sum_pos_2,
+                    bit_res=bit_res,
+                )
+            elif sensitivity_analysis:
+                logger.warning(f"`plot_quant_weight_hist` provided `sensitivity_analysis=True`, but no weight tensor binned gradients were provided for module {params['module_name']}.")        
+            else:
+                # No gradients were found, or we are not doing a sensitivity analysis for the weights
+                # Create folder
+                weight_plot_folder = create_double_level_plot_folder(file_path, "weights", "hists")
+                weight_plot_filename = weight_plot_folder / f"Weight-hist-{params['module_name']}.png"
+
+                # Generate plots
+                _plot_single_tensor_histogram(
+                    weight_histogram, weight_plot_filename, params, sum_pos_1, bit_res
+                )
 
 
 ##############################
@@ -364,9 +384,7 @@ def plot_quant_act_SA_hist(
     logger.info(log_msg)
 
     # Create plotting folders
-    act_plot_folder = file_path / "sensitivity_analysis" / "activations"
-    if not os.path.exists(act_plot_folder):
-        os.makedirs(act_plot_folder, exist_ok=True)
+    act_plot_folder = create_double_level_plot_folder(file_path, 'activations', 'sensitivity_analysis')
 
     # For each module
     for module_name in act_forward_histograms.data:
