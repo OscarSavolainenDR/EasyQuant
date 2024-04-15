@@ -100,6 +100,47 @@ def backwards_SA_histogram_hook(
     """
 
     def hook(module, inp_grad, out_grad):
+        """
+        updates the backpropagation histogram dataclass with the gradients of a
+        module, based on the forward histogram bins and using torch.bincount() to
+        compute the sum of gradients.
+
+        Args:
+            module (instance of a class that defines the module.): 3D tensor of
+                inputs to the hook function.
+                
+                		- `module`: This is an instance of a Python class that contains
+                information about the model's forward pass and backward passes.
+                		- `inp_grad`: This is a tensor representing the gradients of the
+                model's inputs with respect to its outputs.
+                		- `out_grad`: This is a tensor representing the gradients of the
+                model's outputs with respect to its inputs.
+                
+                	The function then proceeds to compute and store the summed gradients
+                of the histogram bins in the dataclass `act_backward_histograms`.
+            inp_grad (ndarray.): 1-dimensional tensor of gradients to be summed
+                with the forward histogram bins.
+                
+                		- `inp_grad` is an instance of the `torch.Tensor` class.
+                		- It has one or more dimensions (depending on the input shape).
+                		- The shape of the tensor is `(1,)` for a single-element tensor
+                or a multi-dimensional tensor with dimensions `inp_grad.shape`.
+                		- The elements of the tensor are floating-point values.
+                		- The tensor may have a specific data type (e.g., `float32`,
+                `float64`, etc.).
+                		- The tensor is either a scalar or a vector, depending on the
+                input shape.
+            out_grad (1D tensor of size ( possibly zero).): 1D tensor of gradients
+                to be summed and stored in the dataclass `act_backward_histograms`.
+                
+                		- `out_grad`: A tensor with shape `(1, 2)` containing the gradients
+                for the current forward pass. The first dimension represents the
+                batch size, and the second dimension represents the number of
+                histogram bins.
+                		- `inp_grad`: The input gradient tensor, which is a scalar
+                representing the gradient of the current forward pass.
+
+        """
         if name not in act_forward_histograms.data:
             return
         

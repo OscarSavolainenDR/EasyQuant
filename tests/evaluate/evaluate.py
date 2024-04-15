@@ -4,6 +4,37 @@ from pathlib import Path
 def evaluate(model, device_str="cuda"):
 
     # Download an example image from the pytorch website
+    """
+    downloads an image from a PyTorch repository and preprocesses it for feeding
+    into a deep learning model. It then moves the input and model to the GPU or
+    CPU, runs the model on the input, and produces probabilities for each of
+    ImageNet's 1000 categories.
+
+    Args:
+        model (nn.Module.): 3D convolutional neural network (CNN) that is being
+            evaluated, and it is expected to be a torch.nn.Module object.
+            
+            		- `device_str`: A string representing the device to move the input
+            and model to (either "cpu" or "cuda").
+            		- `input_batch`: A tensor of shape 1000, representing a mini-batch
+            of input images.
+            		- `model`: A PyTorch model that takes the input batch as its argument.
+            The model has various properties, such as:
+            		+ `to(device_str)`: Moves the model to the specified device (either
+            "cpu" or "cuda").
+            		+ `unsqueeze(0)`: Adds a dimension of size 1 to the input batch,
+            which is required by PyTorch models.
+            		+ `dimension` and `dim`: These are not explicitly provided in the
+            code snippet, but can be inferred from the context as the dimension
+            of the output of the `model` function.
+            		+ `torch.nn.functional.softmax(output[0], dim=0)`: Applies a softmax
+            activation function to the output of the model, which produces
+            probabilities for each class.
+        device_str (str): device (either "cpu" or "cuda") to which the input tensor
+            and the model will be moved for computation, allowing the function to
+            take advantage of GPU acceleration when available.
+
+    """
     import urllib
 
     url, filename = (
