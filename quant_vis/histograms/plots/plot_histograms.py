@@ -8,10 +8,10 @@ import copy
 from pathlib import Path
 
 from ...utils.act_histogram import ActHistogram
-from ...settings import HIST_QUANT_BIN_RATIO, SMOOTH_WINDOW
+from ...settings import HIST_QUANT_BIN_RATIO, SMOOTH_WINDOW, SUM_POS_1_DEFAULT, SUM_POS_2_DEFAULT
+from .weights import get_weight_quant_histogram
 from .utils import (
     get_prob_mass_outside_quant_range,
-    get_weight_quant_histogram,
     fill_in_mean_subplot,
     draw_centroids_and_tensor_range,
     moving_average,
@@ -19,18 +19,16 @@ from .utils import (
 )
 
 from typing import Callable, Tuple, Dict, Union, List
-import logging
+from utils.logger import setup_logger
 
-# Configure the logger
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
+# Configure logger
+logger = setup_logger(__name__)
 
 def _plot_single_tensor_histogram(
     forward_hist: Tuple[torch.Tensor, torch.Tensor],
     filename: Path,
     params: Dict,
-    sum_pos_1: List[float] = [0.18, 0.75, 0.1, 0.1],
+    sum_pos_1: List[float] = SUM_POS_1_DEFAULT, 
     bit_res: int = 8,
 ):
     """
@@ -242,8 +240,8 @@ def plot_quant_weight_hist(
     plot_title: Union[str, None] = None,
     module_name_mapping: Union[Callable, None] = None,
     conditions_met: Union[Callable, None] = None,
-    sum_pos_1: List[float] = [0.18, 0.60, 0.1, 0.1], 
-    sum_pos_2: List[float] = [0.18, 0.60, 0.1, 0.1], 
+    sum_pos_1: List[float] = SUM_POS_1_DEFAULT, 
+    sum_pos_2: List[float] = SUM_POS_2_DEFAULT,
     sensitivity_analysis: bool = False,
     bit_res: int = 8,
 ):
@@ -261,7 +259,8 @@ def plot_quant_weight_hist(
     - module_name_mapping (Callable): a function that edits the name of the module to whatever alias is desired.
     - conditions_met (Callable): a function that returns True if the conditons are met for
                                 adding a hook to a module, and false otherwise. Defaults to None.
-    - sum_pos_1 (List[float]): coordinates for the sub-plot for the forward histogram
+    - sum_pos_1 (List[float]): coordinates for the sub-plot for the weight tensor histogram
+    - sum_pos_2 (List[float]): coordinates for the sub-plot for the gradients
     - sensitivity_analysis (bool): whether ot nor, if we have grads for the weight tensor, 
                                 should we plot the sensitivity analysis for the weights.
     - bit_res (int): the quantization bit width of the tensor, e.g. 8 for int8.
@@ -286,7 +285,7 @@ def plot_quant_weight_hist(
         if hasattr(module, "weight_fake_quant"):
             # Check if the conditions were met for this module
             if conditions_met and not conditions_met(module, module_name):
-                logger.info(
+                logger.debug(
                     f"The conditons for plotting the histogram for the weight tensor of module {module_name} were not met."
                 )
                 continue
@@ -347,8 +346,8 @@ def plot_quant_act_SA_hist(
     act_forward_histograms: ActHistogram,
     act_backward_histograms: ActHistogram,
     file_path: Path,
-    sum_pos_1: List[float] = [0.18, 0.60, 0.1, 0.1],
-    sum_pos_2: List[float] = [0.75, 0.43, 0.1, 0.1],
+    sum_pos_1: List[float] = SUM_POS_1_DEFAULT, 
+    sum_pos_2: List[float] = SUM_POS_2_DEFAULT,
     plot_title: Union[str, None] = None,
     module_name_mapping: Union[Callable, None] = None,
     bit_res: int = 8,
@@ -422,8 +421,8 @@ def _plot_SA_tensor_histogram(
     binned_back_grads: torch.Tensor,
     filename: Path,
     params: Dict,
-    sum_pos_1: List[float] = [0.18, 0.60, 0.1, 0.1],
-    sum_pos_2: List[float] = [0.75, 0.43, 0.1, 0.1],
+    sum_pos_1: List[float] = SUM_POS_1_DEFAULT, 
+    sum_pos_2: List[float] = SUM_POS_2_DEFAULT,
     bit_res: int = 8,
 ):
     """
@@ -513,7 +512,7 @@ def _plot_SA_tensor_histogram(
         forward_hist_pdf,
         "b.",
         markersize=markersize,
-        label=f"Forward Act Probability",
+        label=f"Tensor Probability",
     )
     # Gradients
     ax.plot(
@@ -534,7 +533,7 @@ def _plot_SA_tensor_histogram(
         smoothed_hist,
         "b-",
         markersize=markersize,
-        label=f"Smoothed Act Prob.",
+        label=f"Smoothed Tensor Prob.",
     )
     # Smoothed Gradients
     ax.plot(
@@ -547,7 +546,7 @@ def _plot_SA_tensor_histogram(
 
     # Plot labels
     plt.title(f"Sensitivity Analysis - {params['title']} - {params['module_name']}")
-    plt.xlabel(f"Activation/Gradient value, overlain with quantization bins")
+    plt.xlabel(f"{params["act_or_weight"]}/Gradient value, overlain with quantization bins")
     plt.ylabel(f"Probability")
     plt.legend(loc="upper right")
 

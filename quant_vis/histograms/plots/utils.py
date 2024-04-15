@@ -6,7 +6,6 @@ import os
 
 matplotlib.use("Agg")
 
-from .weights import get_weight_quant_histogram
 from ...settings import HIST_QUANT_BIN_RATIO, HIST_XMAX, HIST_XMIN
 
 

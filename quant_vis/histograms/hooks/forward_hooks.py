@@ -7,11 +7,10 @@ from utils.dotdict import dotdict
 from ...settings import HIST_XMIN, HIST_XMAX, HIST_QUANT_BIN_RATIO
 
 from typing import Callable, Union
-import logging
+from utils.logger import setup_logger
 
 # Configure the logger
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 
 def activation_forward_histogram_hook(
@@ -150,7 +149,7 @@ def add_activation_forward_hooks(
     for name, module in model.named_modules():
         if hasattr(module, "fake_quant_enabled") and "weight_fake_quant" not in name:
             if conditions_met and not conditions_met(module, name):
-                logger.info(
+                logger.debug(
                     f"The conditons for adding an activation hook to module {name} were not met."
                 )
                 continue

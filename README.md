@@ -25,6 +25,14 @@ git clone git@github.com:OscarSavolainenDR/EasyQuant.git .
 pip install -e .
 ```
 
+### Tutorials
+We provided a handful of tutorials on all of the major parts of this repo, e.g. visualization plots, 
+
+TODO: PTQ observers, quantization modules, unit tests, etc.
+
+### Logging
+Logging to console is provided, and by default the level is set to `INFO`. When debugging, feel free to change this level to `DEBUG` in `utils.logger.py`. Some logging is set to `DEBUG`, and may come in useful when trying to make things work. Of course, if anything is causing a noticeable issue, please open up an Issue on this Github repo / get in touch and we'll get to it!
+
 ## Suggestions
 I'd generally suggest adding any folder that you generate plots into (e.g. Sensitivity Analysis plots), into a `.gitignore` file. It'll keep our git history from getting filled up with PNG files.
 

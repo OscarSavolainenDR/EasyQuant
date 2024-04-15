@@ -4,12 +4,11 @@ from ...utils.act_histogram import ActHistogram
 from .forward_hooks import add_activation_forward_hooks
 from utils.dotdict import dotdict
 
-import logging
 from typing import Union, Callable
+from utils.logger import setup_logger
 
 # Configure the logger
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 
 def add_sensitivity_analysis_hooks(

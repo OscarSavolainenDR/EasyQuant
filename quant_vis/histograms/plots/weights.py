@@ -3,11 +3,10 @@ from typing import Tuple, Union
 
 from ...settings import HIST_QUANT_BIN_RATIO, HIST_XMAX, HIST_XMIN
 
-import logging
+from utils.logger import setup_logger
 
-# Configure the logger
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Configure logger
+logger = setup_logger(__name__)
 
 def get_weight_quant_histogram(
     weight: torch.nn.Parameter,
