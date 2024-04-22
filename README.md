@@ -12,7 +12,7 @@ This library has some cool features, such as:
 - Full compatability with Eager, FX Graph, and Export Mode quantization. It's downstream of PyTorch, so everything will just work.
 - Custom quantization-specific visualization and analysis tools: see how your tensor interacts with its quantization grid, and see what parts of your quantization range matter the most with Jacobian Sensitivity Analysis plots.
 - Significantly improve the speed of the Quantization Aware Training (QAT) and Post-Training Quantization (PTQ) forward calls with our custom quantization modules. Save GPU time, save money!
-- A large suite of non-natively-supported-by-PyTorch PTQ observers, e.g. fixed weight observers, clamp-to-some-percentile observers, KL-divergence minimizing observers, etc.
+- TODO: A large suite of non-natively-supported-by-PyTorch PTQ observers, e.g. fixed weight observers, clamp-to-some-percentile observers, KL-divergence minimizing observers, etc.
 - TODO: An extensive array of unit tests to catch your deadly silent errors, and make them loud :fireworks:.
 
 
@@ -34,7 +34,7 @@ TODO: PTQ observers, quantization modules, unit tests, etc.
 Logging to console is provided, and by default the level is set to `INFO`. When debugging, feel free to change this level to `DEBUG` in `utils.logger.py`. Some logging is set to `DEBUG`, and may come in useful when trying to make things work. Of course, if anything is causing a noticeable issue, please open up an Issue on this Github repo / get in touch and we'll get to it!
 
 ## Suggestions
-I'd generally suggest adding any folder that you generate plots into (e.g. Sensitivity Analysis plots), into a `.gitignore` file. It'll keep our git history from getting filled up with PNG files.
+I'd generally suggest adding any folder that you generate plots into (e.g. Sensitivity Analysis plots), into a `.gitignore` file. It'll keep your git history from getting filled up with PNG files.
 
 ## How to Contribute
 Open an issue, and we'll go from there! This is a very new library.
