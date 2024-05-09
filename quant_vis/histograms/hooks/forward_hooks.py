@@ -39,6 +39,59 @@ def activation_forward_histogram_hook(
 
     def hook(module, input):
         # Ensure we are in eval mode, and ensure that this is not during a Shadow conversion check.
+        """
+        calculates and stores histograms for activations during training, to track
+        gradient statistics for quantization-aware training.
+
+        Args:
+            module (ns.Shadow, ns.Module, or torch.Tensor object.): PyTorch module
+                whose activations will be histogrammed.
+                
+                		- `training`: Whether the module is in training or not.
+                		- `type`: The type of the input `module`, which can be either
+                `ns.Shadow` or another type.
+                		- `zero_point`: The zero point of the quantization range, which
+                depends on the qparams and the histogram limits.
+                		- `scale`: The scale factor of the quantization range, which
+                depends on the qparams and the histogram limits.
+                		- `bit_res`: The bit resolution of the input `module`, which
+                determines the number of quantization bins.
+                		- `HIST_XMIN`: The minimum value of the histogram, which is
+                dependent on the qrange and the qparams.
+                		- `HIST_XMAX`: The maximum value of the histogram, which is
+                dependent on the qrange and the qparams.
+                		- `HIST_QUANT_BIN_RATIO`: The number of histogram bins per
+                quantization bin, which can be either symmetric or asymmetric.
+                		- `module.scale`: The scale factor of the input `module`.
+                		- `module.zero_point`: The zero point of the input `module`.
+            input (1D tensor of any data type.): 1D tensor of activation values
+                to be processed and histogrammed.
+                
+                		- `input`: The input tensor to be processed by the hook function.
+                Its shape and type depend on the specific module and input data.
+                		- `module`: The PyTorch module for which the hook function is
+                defined. It contains information about the module's architecture,
+                parameters, and training state.
+                		- `bit_res`: The number of bits used to represent the quantization
+                values. This determines the range of possible values in the quantized
+                output.
+                		- `qrange`: The full range of possible values in the quantized
+                output, calculated as 2^`bit_res`. This range is used to determine
+                the histogram bins.
+                		- `qparams`: The parameters of the quantization scheme, which
+                include the number of bits for each channel and the symmetric
+                quantization parameter. These parameters affect the quantized
+                output range and histogram bins.
+                		- `HIST_XMIN`, `HIST_XMAX`, `HIST_QUANT_BIN_RATIO`: Constants
+                that define the histogram binning scheme used in the hook function.
+                They determine the number of histogram bins per quantization bin
+                and the offset for symmetric quantization.
+                		- `local_input`: The input tensor after deserialization, which
+                may have undergone additional transformations such as normalization
+                or scaling. Its shape and type depend on the specific module and
+                input data.
+
+        """
         if not module.training and type(module) is not ns.Shadow:
 
             # Get number of quantization bins from the quantization bit width

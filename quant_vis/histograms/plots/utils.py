@@ -150,6 +150,23 @@ def moving_average(input_tensor, window_size):
 ###########
 
 def create_double_level_plot_folder(file_path: str, lvl_1: str, lvl_2: str) -> str:
+    """
+    generates a plot folder with two levels of subfolders based on input parameters
+    `file_path`, `lvl_1`, and `lvl_2`.
+
+    Args:
+        file_path (str): location where the plot folder will be created.
+        lvl_1 (str): ﬁrst level of subfolders within which the plot folder will
+            be created.
+        lvl_2 (str): second level of subfolders within the plot folder, and is
+            used to create the final plot folder path through a series of nested
+            directory creations.
+
+    Returns:
+        str: a string representing the path to a double-level folder for storing
+        weight plots.
+
+    """
     weight_plot_folder = (
         file_path / lvl_1 / lvl_2 
     )
