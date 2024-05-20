@@ -1,4 +1,5 @@
 import torch
+import os
 import torch.quantization as tq
 from torch.ao.quantization.quantize_fx import prepare_fx, prepare_qat_fx
 from torch.ao.quantization.fake_quantize import FixedQParamsFakeQuantize
@@ -6,7 +7,6 @@ from torch.ao.quantization.qconfig_mapping import QConfigMapping
 import torch.fx as fx
 
 from pathlib import Path
-import ipdb
 from typing import Union, Dict, Any, Tuple
 
 from model.resnet import resnet18
@@ -37,7 +37,7 @@ from quant_vis.histograms import (
 ipdb_sys_excepthook()
 
 
-model = resnet18(weights="ResNet18_Weights.DEFAULT")
+model = resnet18(pretrained=True)
 # print(model)
 
 # Step 1: architecture changes
@@ -55,7 +55,8 @@ model.eval()
 fused_model = torch.ao.quantization.fuse_modules(model, modules_to_list)
 
 # Step 3: Assign qconfigs
-backend = "fbgemm"
+# backend = "fbgemm"
+backend = "qnnpack"
 # qconfig = torch.quantization.get_default_qconfig(backend)
 
 
@@ -323,14 +324,16 @@ out = fx_model(input)  # Test we can feed something through the model
 
 
 def conditions_met_forward_act_hook(module: torch.nn.Module, name: str) -> bool:
-    if '1' in name:
+    if "1" in name:
         return True
     return False
 
+
 def weight_conditions_met(module: torch.nn.Module, name: str) -> bool:
-    if 'conv' not in name:
+    if "conv" not in name:
         return False
     return True
+
 
 # act_forward_histograms = add_activation_forward_hooks(
 # fx_model, conditions_met_forward_act_hook
@@ -341,17 +344,26 @@ fx_model.apply(enable_PTQ_observer)
 evaluate(fx_model, "cpu")
 fx_model.apply(disable_PTQ_observer)
 
-sum_pos_1 = [0.18, 0.60, 0.1, 0.1]
-sum_pos_2 = [0.75, 0.43, 0.1, 0.1]
-plot_quant_weight_hist(
-    fx_model,
-    plot_title="TEST",
-    file_path = Path(__file__).resolve().parent / "Histogram_plots",
-    module_name_mapping=None,
-    sum_pos_1=sum_pos_1,
-    conditions_met=weight_conditions_met,
-    bit_res=8,
+from quant_vis.boxplots import per_channel_boxplots
+
+per_channel_boxplots(
+    fx_model.conv1.weight,
+    folder_path=Path(os.path.abspath("") + "/Box_plots"),
+    filename="conv1",
+    title="conv1",
 )
+
+# sum_pos_1 = [0.18, 0.60, 0.1, 0.1]
+# sum_pos_2 = [0.75, 0.43, 0.1, 0.1]
+# plot_quant_weight_hist(
+#     fx_model,
+#     plot_title="TEST",
+#     file_path = Path(__file__).resolve().parent / "Histogram_plots",
+#     module_name_mapping=None,
+#     sum_pos_1=sum_pos_1,
+#     conditions_met=weight_conditions_met,
+#     bit_res=8,
+# )
 # plot_quant_act_hist(
 # act_forward_histograms,
 # plot_title="TEST",
@@ -366,55 +378,56 @@ plot_quant_weight_hist(
 # fx_model.activation_post_process_0.zero_point.data = torch.Tensor([0.0])
 
 
-act_forward_histograms, act_backward_histograms = add_sensitivity_analysis_hooks(
-    fx_model, conditions_met_forward_act_hook
-)
-for _ in range(2):
-    # input = torch.rand(1,3,256,256)
+# act_forward_histograms, act_backward_histograms = add_sensitivity_analysis_hooks(
+#     fx_model, conditions_met_forward_act_hook
+# )
+# for _ in range(2):
+#     # input = torch.rand(1,3,256,256)
+#
+#     import urllib
+#
+#     url, filename = (
+#         "https://github.com/pytorch/hub/raw/master/images/dog.jpg",
+#         "dog.jpg",
+#     )
+#     try:
+#         urllib.URLopener().retrieve(url, filename)
+#     except:
+#         urllib.request.urlretrieve(url, filename)
+#     # sample execution (requires torchvision)
+#     from PIL import Image
+#     from torchvision import transforms
+#
+#     input_image = Image.open(filename)
+#     preprocess = transforms.Compose(
+#         [
+#             transforms.Resize(256),
+#             transforms.CenterCrop(224),
+#             transforms.ToTensor(),
+#             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+#         ]
+#     )
+#     input_tensor = preprocess(input_image)
+#     input_batch = input_tensor.unsqueeze(
+#         0
+#     )  # create a mini-batch as expected by the model
+#     # JUST FOR TESTING THE PERFECT QUANT OF FIRST QUANTSTUB
+#     # input_batch = torch.randint(0, 255, (1, 3, 256, 256))/ 255
+#     output = fx_model(input_batch)
+#
+#     output.mean().backward()
+#
+# plot_quant_act_SA_hist(
+#     act_forward_histograms,
+#     act_backward_histograms,
+#     file_path = Path(__file__).resolve().parent / "Histogram_plots",
+#     sum_pos_1=sum_pos_1,
+#     sum_pos_2=sum_pos_2,
+#     plot_title="TEST-SA",
+#     module_name_mapping=None,
+#     bit_res=8,
+# )
+# XXX
+#
+# TODO: test conditions met callable
 
-    import urllib
-
-    url, filename = (
-        "https://github.com/pytorch/hub/raw/master/images/dog.jpg",
-        "dog.jpg",
-    )
-    try:
-        urllib.URLopener().retrieve(url, filename)
-    except:
-        urllib.request.urlretrieve(url, filename)
-    # sample execution (requires torchvision)
-    from PIL import Image
-    from torchvision import transforms
-
-    input_image = Image.open(filename)
-    preprocess = transforms.Compose(
-        [
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ]
-    )
-    input_tensor = preprocess(input_image)
-    input_batch = input_tensor.unsqueeze(
-        0
-    )  # create a mini-batch as expected by the model
-    # JUST FOR TESTING THE PERFECT QUANT OF FIRST QUANTSTUB
-    # input_batch = torch.randint(0, 255, (1, 3, 256, 256))/ 255
-    output = fx_model(input_batch)
-
-    output.mean().backward()
-
-plot_quant_act_SA_hist(
-    act_forward_histograms,
-    act_backward_histograms,
-    file_path = Path(__file__).resolve().parent / "Histogram_plots",
-    sum_pos_1=sum_pos_1,
-    sum_pos_2=sum_pos_2,
-    plot_title="TEST-SA",
-    module_name_mapping=None,
-    bit_res=8,
-)
-XXX
-
-#TODO: test conditions met callable
