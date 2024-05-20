@@ -1,4 +1,5 @@
 Histogram_plots
+.DS_Store
 Box_plots
 __pycache__
 *.egg-info
