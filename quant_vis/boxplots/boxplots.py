@@ -55,9 +55,10 @@ def per_channel_boxplots(
 
     # Save file
     if not folder_path or not filename:
-        logger.info("Boxplots are not being saved.")
+        logger.info("The boxplot is not being saved.")
         return
     file_path = os.path.join(folder_path, f"{filename}.png")
     if not os.path.exists(folder_path):
         os.makedirs(folder_path, exist_ok=True)
     fig.savefig(file_path, dpi=450)
+    logger.info(f"Boxplot being saved to '{file_path}'.")
