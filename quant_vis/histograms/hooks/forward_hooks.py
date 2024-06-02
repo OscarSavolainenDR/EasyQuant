@@ -1,6 +1,6 @@
 import torch
 import torch.quantization._numeric_suite as ns
-from ...utils.act_histogram import ActHistogram
+from ...utils.act_data import ActData
 from ...utils.hooks import is_model_quantizable
 from utils.dotdict import dotdict
 
@@ -14,7 +14,7 @@ logger = setup_logger(__name__)
 
 
 def activation_forward_histogram_hook(
-    act_histogram: ActHistogram, name: str, qscheme: torch.qscheme, bit_res: int = 8
+    act_histogram: ActData, name: str, qscheme: torch.qscheme, bit_res: int = 8
 ):
     """
     A pre-forward hook that measures the floating-point activation being fed into a quantization module.
@@ -27,7 +27,7 @@ def activation_forward_histogram_hook(
     the histogram will accumulate the frequencies of all of the binned values.
 
     activation_histogram_hook inputs:
-    - act_histogram (ActHistogram): a dataclass instance that stores the activation histograms and hook handles.
+    - act_histogram (ActData): a dataclass instance that stores the activation histograms and hook handles.
     - name (str): the name of the module, and how its histogram will be stored in the dict.
     - qscheme (torch.qscheme): the qscheme of the quantization module.
     - bit_res (int): the quantization bit width of the tensor, e.g. 8 for int8.
@@ -112,38 +112,50 @@ def activation_forward_histogram_hook(
 def add_activation_forward_hooks(
     model: torch.nn.Module,
     conditions_met: Union[Callable, None] = None,
+    hook: Union[Callable, None] = None,
     bit_res: int = 8,
 ):
     """
-    This function adds forward activation hooks to the quantization modules in the model, if their names
-    match any of the patterns in `act_histogram.accepted_module_name_patterns`.
-    These hooks measure and store an aggregated histogram, with the bins defined by the quantization
-    grid. This tells us how the activation data is distributed on the quantization grid.
+    This function adds forward activation hooks to the quantization modules in
+    the model, if their names match any of the patterns in
+    `act_histogram.accepted_module_name_patterns`.
+    These hooks measure and store values associated woth the activations,
+    as defined by the hook. The attributes should be stored in `act_data.data`,
+    and the hook handles should be stored in `act_data.hook_handles`.
 
     Inputs:
     - model (torch.nn.Module):      the model we will be adding hooks to.
-    - conditions_met (Callable):    a function that returns True if the conditons are met for
-                                    adding a hook to a module, and false otherwise. Defaults to None.
+    - conditions_met (Callable):    a function that returns True if the
+                                    conditons are met for adding a hook to a
+                                    module, and false otherwise. Defaults to
+                                    None.
+    - hook (Callable): the hook that will be added to the
+                                    modules, which will store some activation
+                                    attribute into `act_data`.
     - bit_res (int): the quantization bit width of the tensor, e.g. 8 for int8.
 
     Returns:
-    - act_histograms (ActHistogram): A dataclass instance that contains the stored histograms
-                                    and hook handles.
+    - act_data (ActData): A dataclass instance that contains the
+                                    stored histograms and hook handles.
     """
+
+    # Check if the hook is specified
+    if hook is None:
+        raise ValueError("The `hook` argument must be specified.")
 
     # If the conditons are met for adding hooks
     if not is_model_quantizable(model, "activation"):
-        logger.warning(f"None of the model activations are quantizable")
+        logger.warning("None of the model activations are quantizable")
         return
 
     logger.warning(
-        f"\nAdding forward activation histogram hooks. This will significantly slow down the forward calls for "
-        "the targetted modules."
+        "\nAdding forward activation histogram hooks. This will significantly "
+        "slow down the forward calls for the targetted modules."
     )
 
-    # We intialise a new ActHistogram instance, which will be responsible for containing the
-    # activation histogram data
-    act_histograms = ActHistogram(data={}, hook_handles={})
+    # We intialise a new ActData instance, which will be responsible for
+    # containing the per-channel max activation data
+    act_data = ActData(data={}, hook_handles={})
 
     # Add activation-hist pre-forward hooks to the desired quantizable module
     for name, module in model.named_modules():
@@ -155,8 +167,8 @@ def add_activation_forward_hooks(
                 continue
 
             hook_handle = module.register_forward_pre_hook(
-                activation_forward_histogram_hook(
-                    act_histograms,
+                hook(
+                    act_data,
                     name,
                     module.qscheme,
                     bit_res=bit_res,
@@ -164,6 +176,6 @@ def add_activation_forward_hooks(
             )
             # We store the hook handles so that we can remove the hooks once we have finished
             # accumulating the histograms.
-            act_histograms.hook_handles[name] = hook_handle
+            act_data.hook_handles[name] = hook_handle
 
-    return act_histograms
+    return act_data

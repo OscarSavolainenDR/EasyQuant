@@ -11,3 +11,4 @@ SMOOTH_WINDOW = 9
 SUM_POS_1_DEFAULT = [0.18, 0.60, 0.1, 0.1]
 # Coordinates for the sub-plot for the sensitivity analysis mini-plot
 SUM_POS_2_DEFAULT = [0.75, 0.43, 0.1, 0.1]
+

@@ -136,23 +136,25 @@ def moving_average(input_tensor, window_size):
     """
     # Create a 1D convolution kernel filled with ones
     kernel = torch.ones(1, 1, window_size) / window_size
-    
+
     # Apply padding to handle boundary elements
     padding = (window_size - 1) // 2
-    
+
     # Apply the convolution operation
-    output_tensor = F.conv1d(input_tensor.unsqueeze(0).unsqueeze(0), kernel, padding=padding)
-    
+    output_tensor = F.conv1d(
+        input_tensor.unsqueeze(0).unsqueeze(0), kernel, padding=padding
+    )
+
     return output_tensor.squeeze()
+
 
 ###########
 # PATHING #
 ###########
 
+
 def create_double_level_plot_folder(file_path: str, lvl_1: str, lvl_2: str) -> str:
-    weight_plot_folder = (
-        file_path / lvl_1 / lvl_2 
-    )
+    weight_plot_folder = file_path / lvl_1 / lvl_2
     if not os.path.exists(weight_plot_folder):
         os.makedirs(weight_plot_folder, exist_ok=True)
     return weight_plot_folder

@@ -8,6 +8,7 @@ from utils.logger import setup_logger
 # Configure logger
 logger = setup_logger(__name__)
 
+
 def get_weight_quant_histogram(
     weight: torch.nn.Parameter,
     scale: torch.nn.Parameter,
@@ -73,17 +74,19 @@ def get_weight_quant_histogram(
         bin_indices = torch.bucketize(fake_quant_tensor, hist.bin_edges)
 
         # Compute the sum of gradients, with the forward histogram bins, using torch.bincount()
-        size_diff = (
-            hist.hist.size()[0] - bin_indices.max() - 1
-        )
+        size_diff = hist.hist.size()[0] - bin_indices.max() - 1
         padding = torch.zeros(size_diff)
         binned_grads = torch.concat(
-            [torch.bincount(bin_indices.flatten(), weights=weight.grad.flatten()), padding]
+            [
+                torch.bincount(bin_indices.flatten(), weights=weight.grad.flatten()),
+                padding,
+            ]
         )
         return hist, binned_grads
 
     elif sensitivity_analysis:
-        logger.warning("`get_weight_quant_histogram` provided `sensitivity_analysis=True`, but the weight tensor does not have any attached gradients.")        
+        logger.warning(
+            "`get_weight_quant_histogram` provided `sensitivity_analysis=True`, but the weight tensor does not have any attached gradients."
+        )
 
     return hist, None
-

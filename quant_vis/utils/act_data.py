@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class ActHistogram:
+class ActData:
     """
     A dataclass for storing arbitrary activation data via hooks.
     The data is stored in `data`, and `hook_handles` stores the hook handles.

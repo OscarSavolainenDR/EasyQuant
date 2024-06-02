@@ -1,7 +1,10 @@
 import torch
 
-from ...utils.act_histogram import ActHistogram
-from .forward_hooks import add_activation_forward_hooks
+from ...utils.act_data import ActData
+from .forward_hooks import (
+    add_activation_forward_hooks,
+    activation_forward_histogram_hook,
+)
 from utils.dotdict import dotdict
 
 from typing import Union, Callable
@@ -21,11 +24,11 @@ def add_sensitivity_analysis_hooks(
     forward and backwards histograms, for the combined forward / sensitivity analysis
     plots.
     NOTE: the `bit_res` parameter does not control the quantization reoslution of the model, only of the
-    histograms. Ideally they should match. 
+    histograms. Ideally they should match.
 
     `conditions_met` (Callable): This is a function that takes in a module and its name, and returns a boolean
                     indicating whether one should add the hook to it or not.
-        Example: 
+        Example:
             ```
             def conditions_met_forward_act_hook(module: torch.nn.Module, name: str) -> bool:
                 if "hello" in name:
@@ -35,7 +38,10 @@ def add_sensitivity_analysis_hooks(
             ```
     """
     act_forward_histograms = add_activation_forward_hooks(
-        model, conditions_met=conditions_met, bit_res=bit_res
+        model,
+        conditions_met=conditions_met,
+        hook=activation_forward_histogram_hook,
+        bit_res=bit_res,
     )
     act_backward_histograms = add_sensitivity_backward_hooks(
         model, act_forward_histograms
@@ -45,7 +51,7 @@ def add_sensitivity_analysis_hooks(
 
 
 def add_sensitivity_backward_hooks(
-    model: torch.nn.Module, act_forward_histograms: ActHistogram
+    model: torch.nn.Module, act_forward_histograms: Union[None, ActData]
 ):
     """
     Adds the backwards hooks that gather the gradients and sums them up according to the forward
@@ -54,9 +60,15 @@ def add_sensitivity_backward_hooks(
     to the relative contribution of each quantization bin to the output.
     """
 
-    # We intialise a new ActHistogram instance, which will be responsible for containing the
+    if act_forward_histograms is None:
+        raise ValueError(
+            "The `act_forward_histograms` parameter must be specified. It "
+            "should be the output of `add_activation_forward_hooks`."
+        )
+
+    # We intialise a new ActData instance, which will be responsible for containing the
     # backwards pass data
-    act_backward_histograms = ActHistogram(data={}, hook_handles={})
+    act_backward_histograms = ActData(data={}, hook_handles={})
     for module_name in act_forward_histograms.hook_handles.keys():
         module = model.get_submodule(module_name)
         hook_handle = module.register_full_backward_hook(
@@ -73,8 +85,8 @@ def add_sensitivity_backward_hooks(
 
 
 def backwards_SA_histogram_hook(
-    act_forward_histograms: ActHistogram,
-    act_backward_histograms: ActHistogram,
+    act_forward_histograms: ActData,
+    act_backward_histograms: ActData,
     name: str,
 ):
     """
@@ -90,7 +102,7 @@ def backwards_SA_histogram_hook(
     sensitivity analysis.
 
     backwards_histogram_hook inputs:
-    - act_histogram (ActHistogram): a dataclass instance that stores the activation histograms and hook handles.
+    - act_histogram (ActData): a dataclass instance that stores the activation histograms and hook handles.
     - name (str): the name of the module, and how its histogram will be stored in the dict.
 
     hook inputs:
@@ -102,7 +114,7 @@ def backwards_SA_histogram_hook(
     def hook(module, inp_grad, out_grad):
         if name not in act_forward_histograms.data:
             return
-        
+
         # Access the values-to-histogram-bins mapping from the forward call
         bin_indices = act_forward_histograms.data[name].bin_indices - 1
         grad = out_grad[0]

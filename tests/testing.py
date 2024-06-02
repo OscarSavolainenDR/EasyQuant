@@ -33,6 +33,7 @@ from quant_vis.histograms import (
     add_sensitivity_analysis_hooks,
     add_activation_forward_hooks,
 )
+from smooth_quant.hooks import activation_forward_per_out_chan_max_hook
 
 ipdb_sys_excepthook()
 
@@ -351,6 +352,13 @@ per_channel_boxplots(
     folder_path=Path(os.path.abspath("") + "/Box_plots"),
     filename="conv1",
     title="conv1",
+)
+
+act_forward_max_val = add_activation_forward_hooks(
+    model,
+    conditions_met=conditions_met_forward_act_hook,
+    activation_forward_hook=activation_forward_per_out_chan_max_hook,
+    bit_res=8,
 )
 
 # sum_pos_1 = [0.18, 0.60, 0.1, 0.1]
