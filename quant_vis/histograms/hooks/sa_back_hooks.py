@@ -112,6 +112,51 @@ def backwards_SA_histogram_hook(
     """
 
     def hook(module, inp_grad, out_grad):
+        """
+        Updates the dataclass `act_backward_histograms.data[name]` by summing up
+        gradients computed with forward histograms and storing them as binned
+        gradients in the corresponding bin indices.
+
+        Args:
+            module (ndarray.): 3D tensors that are passed through the forward call
+                and then processed to compute the gradients with respect to the
+                corresponding parameters.
+                
+                		- `name`: The name of the module.
+                		- `data`: The dataclass instance containing the histogram data
+                and gradients.
+                		- `act_forward_histograms`: A dataclass instance containing the
+                forward histogram bins and their corresponding indices.
+                		- `act_backward_histograms`: A dataclass instance containing the
+                backward histogram bins and their corresponding indices.
+                		- `out_grad`: The gradient of the output with respect to the
+                input, which is a tensor of shape `(1, 2)` containing the gradients
+                of the two outputs.
+            inp_grad (1D tensor.): 1D tensor of gradients to be summed and stored
+                in the dataclass `act_backward_histograms`.
+                
+                		- `inp_grad` is a tensor with shape `(1, ..., 1)` containing the
+                gradient of the forward pass for a single output dimension.
+                		- The element at index `0` of `inp_grad` represents the gradient
+                of the forward pass for the specified output dimension.
+                		- The shape of `inp_grad` is determined by the
+                `act_forward_histograms.data[name].hist.size()` and `bin_indices.flatten()`
+                in the computation of `binned_grads`.
+                		- `inp_grad.flatten()` returns a 1D tensor containing the flattened
+                shape of the input gradient tensor.
+                		- `torch.bincount(bin_indices.flatten(), weights=inp_grad.flatten())`
+                computes the sum of gradients across all histogram bins, using the
+                forward histogram bins as weights.
+            out_grad (1D tensor.): 1D tensor of gradients output by the forward
+                pass, which is used to compute the sum of histogram bins for each
+                layer in the backward pass.
+                
+                		- `out_grad`: A tensor with shape `(1, 3)` containing the gradients
+                of the model's outputs for the given name. The first dimension
+                corresponds to the batch size, and the second and third dimensions
+                correspond to the number of histogram bins in each output feature.
+
+        """
         if name not in act_forward_histograms.data:
             return
 
