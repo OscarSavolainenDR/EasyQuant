@@ -39,6 +39,67 @@ def activation_forward_histogram_hook(
 
     def hook(module, input):
         # Ensure we are in eval mode, and ensure that this is not during a Shadow conversion check.
+        """
+        Generates high-quality documentation for code given to it, including a
+        histogram of activation values for a specified quantization scheme.
+
+        Args:
+            module (ns.Shadow.): quant module for which the histogram is being
+                computed, and it is used to determine the appropriate quantization
+                range and histogram bins.
+                
+                		- `training`: Boolean indicating whether the module is being
+                trained (True) or not (False).
+                		- `type`: String indicating the type of the module (either
+                "ns.Shadow" or the actual type of the module).
+                		- `name`: String representing the name of the module.
+                		- `quantization_bits`: Int representing the number of quantization
+                bits used for the module's weights and activations.
+                		- `zero_point`: Float representing the zero point for the module's
+                quantization range.
+                		- `scale`: Float representing the scale factor for the module's
+                quantization range.
+                		- `HIST_XMIN`: Int or Float representing the minimum value of
+                the histogram bins.
+                		- `HIST_XMAX`: Int or Float representing the maximum value of
+                the histogram bins.
+                		- `HIST_QUANT_BIN_RATIO`: Float representing the number of
+                histogram bins per quantization bin.
+                
+                	The `module` object is then destructured to extract its properties
+                and attributes, such as:
+                
+                		- `local_input`: The input tensor for the module.
+                		- `qrange`: The quantization range for the module's weights and
+                activations.
+                		- `hist_min_bin`: The minimum bin index in the histogram.
+                		- `hist_max_bin`: The maximum bin index in the histogram.
+                		- `hist_bins`: An array of histogram bins, calculated based on
+                the quantization range and the number of histogram bins per
+                quantization bin.
+                		- `tensor_histogram`: The resulting tensor histogram for the
+                module's activations.
+                		- `bin_indices`: An array of indices representing the histogram
+                bins that the gradients should be mapped to.
+            input (0D tensor of type `torch.Tensor`.): 1D tensor of activation
+                values that will be processed through the histogramming operation.
+                
+                		- `type(module)` is not `ns.Shadow`: This indicates that the
+                module is not a shadow module, and therefore the hook function
+                should handle the quantization for this module.
+                		- `name` in the `act_histogram` dict has not been initialized:
+                This means that this is the first forward pass for this module,
+                and the histogram entry for this module needs to be initialized.
+                		- `local_input` is a tensor: This indicates that the input to
+                the hook function is a tensor, which will be used to calculate the
+                histogram bins.
+                
+                	The properties of the input tensor are not explained in this hook
+                function, as they are not relevant to the quantization process.
+                However, if necessary, these properties can be referenced in
+                subsequent hook functions or in the main codebase.
+
+        """
         if not module.training and type(module) is not ns.Shadow:
 
             # Get number of quantization bins from the quantization bit width

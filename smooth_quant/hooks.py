@@ -35,6 +35,60 @@ def activation_forward_per_out_chan_max_hook(
 
     def hook(module, input):
         # Ensure we are in eval mode, and ensure that this is not during a Shadow conversion check.
+        """
+        Updates the maximum value stored in the `act_data` dictionary for a given
+        module based on the input to that module.
+
+        Args:
+            module (`ns.Shadow`.): neural network module for which the maximum
+                value is being calculated in the function.
+                
+                		- `module`: A PyTorch module object that represents the current
+                module being processed in the forward pass.
+                		- `training`: A boolean variable that indicates whether the
+                module is in training or inference mode. If `training` is `True`,
+                the module is in training mode, and if `training` is `False`, the
+                module is in inference mode.
+                		- `type`: A string variable that represents the type of the
+                module. In this case, `type` is either `ns.Shadow` or `module`.
+                		- `local_input`: A PyTorch tensor object that represents the
+                input to the current module. `local_input` is created by detaching
+                and converting the input tensor from the `act_data` dictionary
+                into a CPU tensor.
+                		- `name`: A string variable that represents the name of the
+                current module. This variable is used to store the max value in
+                the `act_data` dictionary for each quant module.
+                
+                	The logic of the `hook` function can be broken down into two branches:
+                
+                	1/ If the entry in the `act_data` dict has not been initialized,
+                i.e., this is the first forward pass for this module, then:
+                			- Store the max value in `act_data` using the input tensor `local_input`.
+                			- Set the value of `name` to the name of the current module.
+                	2/ Otherwise, if the max value for this quant module has already
+                been initialized, then:
+                			- Update the max value in `act_data` using the input tensor `local_input`.
+                			- The updated value is stored in `act_data.data[name]`.
+            input (0-dimensional tensor (scalar).): 0-dimensional tensor that
+                contains the input data for the module.
+                
+                		- `type(module)`: The type of the module that triggered the hook.
+                In this case, it is `ns.Shadow`.
+                		- `module.training`: A boolean indicating whether the module is
+                in training mode or not. In this case, it is `False`.
+                		- `input[0].detach().cpu()`: The first input to the module,
+                detached from its original tensor and converted to a CPU tensor
+                for further processing.
+                		- `name`: The name of the module.
+                		- `act_data`: A dictionary containing data related to the module's
+                activation function. In this case, it is used to store the maximum
+                value found in the input tensor for each module.
+                
+                	The code within the `if` block explains how to handle the
+                initialisation of the `act_data` dict and how to update its values
+                based on the input tensor.
+
+        """
         if not module.training and type(module) is not ns.Shadow:
 
             local_input = input[0].detach().cpu()

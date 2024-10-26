@@ -325,12 +325,39 @@ out = fx_model(input)  # Test we can feed something through the model
 
 
 def conditions_met_forward_act_hook(module: torch.nn.Module, name: str) -> bool:
+    """
+    Evaluates whether a given `name` meets certain conditions by returning `True`
+    if any of the conditions are met, or `False` otherwise.
+
+    Args:
+        module (torch.nn.Module): module where the function is defined.
+        name (str): boolean value of whether the input string is equal to the
+            literal value "1".
+
+    Returns:
+        bool: a Boolean value indicating whether the condition specified in the
+        `if` statement is true or false.
+
+    """
     if "1" in name:
         return True
     return False
 
 
 def weight_conditions_met(module: torch.nn.Module, name: str) -> bool:
+    """
+    Evaluates if a given `name` has the substring `"conv"`. If it does, the function
+    returns `True`, otherwise it returns `False`.
+
+    Args:
+        module (torch.nn.Module): Python module whose class definition is being
+            checked for existence.
+        name (str): string to be checked for existence of the keyword `conv` in it.
+
+    Returns:
+        bool: `True` if the given name satisfies the condition, and `False` otherwise.
+
+    """
     if "conv" not in name:
         return False
     return True
