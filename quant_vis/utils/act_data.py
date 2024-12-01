@@ -15,6 +15,11 @@ class ActData:
 
         # Remove activation hook once we're done with them
         # Otherwise the hook will remain in, slowing down forward calls
+        """
+        Removes all hook handles and sets `self.data` and `self.hook_handles` to
+        empty dictionaries.
+
+        """
         for handle in self.hook_handles.values():
             handle.remove()
 

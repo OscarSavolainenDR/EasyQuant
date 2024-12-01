@@ -154,6 +154,21 @@ def moving_average(input_tensor, window_size):
 
 
 def create_double_level_plot_folder(file_path: str, lvl_1: str, lvl_2: str) -> str:
+    """
+    Creates a double-level plot folder if it does not already exist, using the
+    given file path.
+
+    Args:
+        file_path (str): path to the folder where the weight plots will be saved.
+        lvl_1 (str): 1st level of subfolders within the specified file path, and
+            is used to create the necessary subfolders for storing weight plots.
+        lvl_2 (str): 2nd level of a file path hierarchy used to create the weight
+            plot folder.
+
+    Returns:
+        str: a path to a double-level folder for storing plot files.
+
+    """
     weight_plot_folder = file_path / lvl_1 / lvl_2
     if not os.path.exists(weight_plot_folder):
         os.makedirs(weight_plot_folder, exist_ok=True)
